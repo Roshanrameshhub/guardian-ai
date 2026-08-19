@@ -148,7 +148,16 @@ class AuthService:
         except Exception as e:
             log.warning("[GOOGLE_AUTH] token verification network error", error=str(e))
 
-        if not google_user_info or "email" not in google_user_info:
+        if google_user_info and "email" in google_user_info:
+            aud = google_user_info.get("aud")
+            if settings.google_client_id and aud and aud != settings.google_client_id:
+                log.warning(
+                    "[GOOGLE_AUTH] token audience mismatch",
+                    expected=settings.google_client_id,
+                    received=aud,
+                )
+                raise InvalidCredentialsError("Invalid token audience.")
+        else:
             # Development/Testing fallback for mock token strings
             if (settings.app_env in ("development", "test") or settings.app_debug) and "mock" in req.id_token.lower():
                 mock_email = "google_user@guardian.ai"

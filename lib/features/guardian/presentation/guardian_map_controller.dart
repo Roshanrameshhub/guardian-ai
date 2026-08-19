@@ -196,8 +196,28 @@ class GuardianMapController extends StateNotifier<GuardianMapState> {
     required String destName,
     String travelMode = 'DRIVE',
   }) async {
-    final userPos = state.userLocation ?? const LatLngPoint(13.0067, 80.2567);
-    DevLog.route('Planning route: ($userPos) -> $destName ($destLat, $destLng) via $travelMode');
+    // 1. Fetch phone's real current GPS location before planning
+    LatLngPoint? userPos;
+    try {
+      final locService = _ref.read(locationServiceProvider);
+      final pos = await locService.getCurrentPosition(
+        timeout: const Duration(seconds: 4),
+      );
+      userPos = LatLngPoint(pos.latitude, pos.longitude);
+      state = state.copyWith(userLocation: userPos);
+    } catch (_) {
+      userPos = state.userLocation;
+    }
+
+    final originLat = userPos?.lat ?? 13.0827;
+    final originLng = userPos?.lng ?? 80.2707;
+
+    // Log exact requirement: [MAP] origin = CURRENT_GPS_LAT,LNG
+    // ignore: avoid_print
+    print('[MAP] origin = $originLat,$originLng');
+    DevLog.route('[MAP] origin = $originLat,$originLng');
+    DevLog.route('Planning route: ($originLat, $originLng) -> $destName ($destLat, $destLng) via $travelMode');
+
     state = state.copyWith(
       isLoading: true,
       destination: LatLngPoint(destLat, destLng),
@@ -207,8 +227,8 @@ class GuardianMapController extends StateNotifier<GuardianMapState> {
     try {
       final guardianRepo = _ref.read(guardianRepositoryProvider);
       final plan = await guardianRepo.calculateSafeRoute(
-        originLat: userPos.lat,
-        originLng: userPos.lng,
+        originLat: originLat,
+        originLng: originLng,
         destLat: destLat,
         destLng: destLng,
         destinationName: destName,

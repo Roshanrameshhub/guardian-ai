@@ -235,33 +235,19 @@ class _SafetyConfirmationSheetState extends State<_SafetyConfirmationSheet> {
             ),
             const SizedBox(height: AppSpacing.xl),
 
-            // Action Buttons: I'M OK, CANCEL, SEND SOS
+            // Action Buttons: I'M SAFE / SEND SOS
             Row(
               children: [
                 Expanded(
-                  flex: 3,
                   child: AppButton(
-                    label: "I'M OK",
+                    label: "I'M SAFE",
                     icon: AppIcons.check,
                     variant: AppButtonVariant.secondary,
                     onPressed: _onSafe,
                   ),
                 ),
-                const SizedBox(width: AppSpacing.sm),
+                const SizedBox(width: AppSpacing.md),
                 Expanded(
-                  flex: 2,
-                  child: AppButton(
-                    label: 'CANCEL',
-                    variant: AppButtonVariant.ghost,
-                    onPressed: () {
-                      _timer?.cancel();
-                      if (mounted) Navigator.of(context).pop();
-                    },
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  flex: 3,
                   child: AppButton(
                     label: 'SEND SOS',
                     icon: AppIcons.sos,

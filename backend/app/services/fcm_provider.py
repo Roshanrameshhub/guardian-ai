@@ -25,17 +25,32 @@ class FcmProvider:
         try:
             key_val = settings.firebase_service_account_key.strip()
             if key_val:
-                # 1. Primary: Explicit service-account JSON content or file path
+                # 1. Direct JSON string in environment variable
                 if key_val.startswith("{"):
                     cred_dict = json.loads(key_val)
                     cred = credentials.Certificate(cred_dict)
-                else:
+                # 2. File path (if file exists on disk)
+                elif os.path.isfile(key_val):
                     cred = credentials.Certificate(key_val)
+                # 3. Base64-encoded JSON string in environment variable
+                else:
+                    import base64
+                    try:
+                        decoded = base64.b64decode(key_val).decode("utf-8")
+                        if decoded.startswith("{"):
+                            cred_dict = json.loads(decoded)
+                            cred = credentials.Certificate(cred_dict)
+                        else:
+                            raise ValueError("Not JSON")
+                    except Exception:
+                        logger.warning("fcm_credential_file_not_found", path=key_val)
+                        return
+
                 firebase_admin.initialize_app(cred)
                 cls._initialized = True
                 logger.info("fcm_initialized_with_service_account_key")
             elif os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
-                # 2. Fallback: Google Application Default Credentials (ADC)
+                # 4. Fallback: Google Application Default Credentials (ADC)
                 firebase_admin.initialize_app()
                 cls._initialized = True
                 logger.info("fcm_initialized_with_adc")

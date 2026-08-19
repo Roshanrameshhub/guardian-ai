@@ -5,13 +5,16 @@ import '../../../core/utils/dev_log.dart';
 import '../../../data/dto/api_dto.dart';
 import '../../../providers/repository_providers.dart';
 
-// Web OAuth client ID — the backend uses this audience when verifying the
-// ID token via Google's tokeninfo endpoint.
-const _kGoogleWebClientId =
-    '638591615239-q9ggn1oo47015msgb982egplt3mhigcf.apps.googleusercontent.com';
+// Web Application OAuth client ID — required as `serverClientId` by GoogleSignIn
+// on Android to generate a backend-verifiable OpenID Connect ID token for FastAPI.
+// Can be supplied via `--dart-define=GOOGLE_WEB_CLIENT_ID=...` or configured below.
+const _kGoogleWebClientId = String.fromEnvironment(
+  'GOOGLE_WEB_CLIENT_ID',
+  defaultValue: '638591615239-q9ggn1oo47015msgb982egplt3mhigcf.apps.googleusercontent.com',
+);
 
 /// Singleton GoogleSignIn instance scoped to the authentication flow.
-/// serverClientId tells the SDK to include an ID token (for the backend).
+/// serverClientId tells the SDK to request an ID token audience for the backend.
 final _googleSignIn = GoogleSignIn(
   serverClientId: _kGoogleWebClientId,
   scopes: ['email', 'profile'],

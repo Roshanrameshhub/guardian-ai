@@ -3,20 +3,31 @@ import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 
 /// Unified API configuration managing base URLs across environments.
 ///
-/// ## LAN / Physical-device testing
+/// ## LAN / Physical-device testing (Development)
 /// Supply the host machine's LAN IP at run-time via `--dart-define`:
 ///
+/// ```bash
+/// flutter run --dart-define=API_BASE_URL=http://192.168.1.6:8000
 /// ```
+///
+/// or:
+///
+/// ```bash
 /// flutter run --dart-define=API_HOST=192.168.1.6
 /// ```
 ///
-/// `API_HOST` overrides every platform default and is the only value
-/// that needs to change when the PC's IP address changes.
-/// No source-code edits are ever required.
+/// ## Deployed Backend (Production)
+/// Point to the deployed Render FastAPI backend over HTTPS:
 ///
-/// ## Production / CI
-/// Use `--dart-define=API_HOST=api.example.com` (or a full URL via
-/// `API_BASE_URL`) in your CI build command to point at the real server.
+/// ```bash
+/// flutter run --dart-define=API_BASE_URL=https://guardian-ai-t55s.onrender.com
+/// ```
+///
+/// Build release APK:
+///
+/// ```bash
+/// flutter build apk --release --dart-define=API_BASE_URL=https://guardian-ai-t55s.onrender.com
+/// ```
 abstract final class ApiConfig {
   // ── dart-define injected values ──────────────────────────────────────────
   
@@ -40,7 +51,11 @@ abstract final class ApiConfig {
   static String? _customBaseUrl;
 
   static void setBaseUrl(String url) {
-    _customBaseUrl = _normalizeUrl(url);
+    if (url.trim().isEmpty) {
+      _customBaseUrl = null;
+    } else {
+      _customBaseUrl = _normalizeUrl(url);
+    }
   }
 
   static void resetBaseUrl() {
@@ -140,17 +155,20 @@ abstract final class ApiConfig {
       if (!prefix.startsWith('/')) prefix = '/$prefix';
       if (prefix.endsWith('/')) prefix = prefix.substring(0, prefix.length - 1);
       
-      String path = uri.path;
-      // Resolve duplicate prefix like /api/v1/api/v1
-      path = path.replaceAll('$prefix$prefix', prefix);
-      
-      if (!path.endsWith(prefix)) {
-        if (path.endsWith('/')) path = path.substring(0, path.length - 1);
-        path = path.isEmpty || path == '/' ? prefix : '$path$prefix';
+      String path = uri.path.trim();
+      while (path.endsWith('/') && path.length > 1) {
+        path = path.substring(0, path.length - 1);
       }
       
+      if (!path.endsWith(prefix)) {
+        path = (path.isEmpty || path == '/') ? prefix : '$path$prefix';
+      }
+      
+      path = path.replaceAll('$prefix$prefix', prefix);
       path = path.replaceAll('//', '/');
-      if (path.endsWith('/')) path = path.substring(0, path.length - 1);
+      while (path.endsWith('/') && path.length > 1) {
+        path = path.substring(0, path.length - 1);
+      }
       
       return port != null && port != 80 && port != 443 ? '$scheme://$host:$port$path' : '$scheme://$host$path';
     } catch (_) {

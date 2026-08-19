@@ -22,12 +22,35 @@ class Settings(BaseSettings):
     app_debug: bool = True
     app_version: str = "1.0.0"
     app_name: str = "Guardian AI API"
+    app_base_url: str = ""
 
     # ── Database ──────────────────────────────────────────────────────────────
     database_url: str = "postgresql+asyncpg://guardian:guardian_pass@localhost:5432/guardian_ai"
 
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def assemble_db_connection(cls, v: str | None) -> str:
+        if not v:
+            return "postgresql+asyncpg://guardian:guardian_pass@localhost:5432/guardian_ai"
+        
+        url = v.strip()
+        # Handle standard PostgreSQL URI formats from Supabase/Render/Heroku
+        if url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+        elif url.startswith("postgresql://") and not url.startswith("postgresql+asyncpg://"):
+            url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        
+        return url
+
     # ── Redis ─────────────────────────────────────────────────────────────────
     redis_url: str = "redis://localhost:6379/0"
+
+    @field_validator("redis_url", mode="before")
+    @classmethod
+    def assemble_redis_connection(cls, v: str | None) -> str:
+        if not v:
+            return ""
+        return v.strip()
 
     # ── JWT ───────────────────────────────────────────────────────────────────
     jwt_secret: str = "change-me-jwt-secret"

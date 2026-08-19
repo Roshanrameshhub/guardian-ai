@@ -6,6 +6,7 @@ from typing import List
 
 from fastapi import APIRouter
 
+from app.core.config import get_settings
 from app.core.dependencies import CurrentUserId, DbSession
 from app.models.intelligence import LocationShareSession
 from app.schemas.intelligence import (
@@ -153,9 +154,12 @@ async def create_location_share(
     db.add(session)
     await db.commit()
 
+    settings = get_settings()
+    base_url = settings.app_base_url.rstrip("/") if settings.app_base_url else "https://guardian-ai-t55s.onrender.com"
+
     return LocationShareResponse(
         share_token=token,
-        share_url=f"https://guardian.ai/track/{token}",
+        share_url=f"{base_url}/track/{token}",
         expires_at=expires_at.isoformat(),
         is_active=True,
     )

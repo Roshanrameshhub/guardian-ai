@@ -346,16 +346,16 @@ class _DestinationSearchSheetState extends State<DestinationSearchSheet> {
           ConstrainedBox(
             constraints: const BoxConstraints(maxHeight: 280),
             child: _searchResults.isEmpty
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(AppSpacing.lg),
-                      child: Text(
-                        'No matches found for "${_searchController.text}". Try another address or area.',
-                        style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
-                        textAlign: TextAlign.center,
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppSpacing.lg),
+                        child: Text(
+                          'Destination not found for "${_searchController.text}".',
+                          style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
+                          textAlign: TextAlign.center,
+                        ),
                       ),
-                    ),
-                  )
+                    )
                 : ListView.separated(
                     shrinkWrap: true,
                     itemCount: _searchResults.length,

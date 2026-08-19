@@ -12,6 +12,7 @@ import '../../../core/theme/radius.dart';
 import '../../../core/theme/spacing.dart';
 import '../../../core/theme/text_styles.dart';
 import '../../../core/widgets/glass_card.dart';
+import '../../../core/widgets/safety_confirmation_dialog.dart';
 import '../../../core/widgets/sos_dialog.dart';
 import '../../../domain/entities/entities.dart';
 import '../../../providers/repository_providers.dart';
@@ -419,11 +420,15 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
                     engine.logEvent(
                       type: SafetyEventType.shakeDetected,
                       severity: SafetyEventSeverity.warning,
-                      title: 'Real Shake Pipeline Injected',
-                      message: 'Processed through 3-axis SensorService anomaly pipeline.',
+                      title: '⚠ POSSIBLE DANGER',
+                      message: 'Physical shake / movement detected.',
                     );
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Shake event dispatched through production pipeline')),
+                    showSafetyConfirmationDialog(
+                      context: context,
+                      ref: ref,
+                      title: '⚠ POSSIBLE DANGER',
+                      subtitle: 'Sudden shake/movement anomaly detected.\nAre you in danger?',
+                      triggerSource: 'sensor_shake_test',
                     );
                   },
                 ),
@@ -436,11 +441,15 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
                     engine.logEvent(
                       type: SafetyEventType.phoneDrop,
                       severity: SafetyEventSeverity.critical,
-                      title: 'Real Phone Drop Injected',
-                      message: 'High acceleration peak (>24 m/s²) dispatched to AI layer.',
+                      title: '⚠ POSSIBLE DANGER',
+                      message: 'High acceleration fall peak (>24 m/s²) recorded.',
                     );
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Drop anomaly dispatched to AI layer')),
+                    showSafetyConfirmationDialog(
+                      context: context,
+                      ref: ref,
+                      title: '⚠ POSSIBLE DANGER',
+                      subtitle: 'Fall/impact anomaly detected.\nAre you in danger?',
+                      triggerSource: 'sensor_fall_test',
                     );
                   },
                 ),
@@ -453,11 +462,15 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
                     engine.logEvent(
                       type: SafetyEventType.loudNoiseDetected,
                       severity: SafetyEventSeverity.critical,
-                      title: 'Voice Distress Triggered',
-                      message: 'Triggered "HELP ME EMERGENCY" against Gemini distress model.',
+                      title: '⚠ POSSIBLE DISTRESS',
+                      message: '"HELP" distress phrase recognized.',
                     );
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Voice distress analysis requested from backend')),
+                    showSafetyConfirmationDialog(
+                      context: context,
+                      ref: ref,
+                      title: '⚠ POSSIBLE DISTRESS',
+                      subtitle: '"HELP" detected.\nAre you in danger?',
+                      triggerSource: 'voice_distress_test',
                     );
                   },
                 ),

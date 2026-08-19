@@ -7,12 +7,9 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/route_paths.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_icons.dart';
-import '../../../core/theme/radius.dart';
 import '../../../core/theme/spacing.dart';
 import '../../../core/theme/text_styles.dart';
 import '../../../core/widgets/app_button.dart';
-import '../../../core/widgets/gentle_checkin_dialog.dart';
-import '../../../core/widgets/glass_card.dart';
 import '../../../core/widgets/guardian_system_status.dart';
 import '../../../core/widgets/safety_confirmation_dialog.dart';
 import '../../../core/widgets/sos_dialog.dart';
@@ -115,7 +112,6 @@ class _GuardianScreenState extends ConsumerState<GuardianScreen> {
   Widget build(BuildContext context) {
     final statusAsync = ref.watch(guardianStatusProvider);
     final engine = ref.watch(guardianEngineProvider);
-    final voiceService = ref.watch(voiceServiceProvider);
     final riskReport = ref.watch(guardianRiskReportProvider);
 
     final isGuardianActive = engine.isActive || (statusAsync.value?.isActive ?? false);
