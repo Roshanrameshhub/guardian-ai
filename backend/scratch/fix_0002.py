@@ -1,29 +1,21 @@
-"""Add safety_zones and police_stations tables.
+import os
 
-These two tables were present in the SQLAlchemy models but were never
-created because the 0001_initial_schema migration ran before they were
-added to the model registry.
+file_path = "c:/dev/guardian-ai/backend/alembic/versions/0002_add_safety_and_police_tables.py"
 
-Revision ID: 0002_add_safety_and_police_tables
-Revises: 0001_initial_schema
-Create Date: 2026-08-16 20:00:00.000000
+with open(file_path, "r") as f:
+    content = f.read()
 
-"""
-from typing import Sequence, Union
+# Add Inspector import
+content = content.replace("from sqlalchemy.dialects.postgresql import UUID\n", "from sqlalchemy.dialects.postgresql import UUID\nfrom sqlalchemy import inspect\n")
 
-import sqlalchemy as sa
-from alembic import op
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy import inspect
+# Modify upgrade function
+upgrade_start = content.find("def upgrade() -> None:")
+upgrade_end = content.find("def downgrade() -> None:")
 
-# revision identifiers, used by Alembic.
-revision: str = '0002_safety_police_tables'
-down_revision: Union[str, None] = '0001_initial_schema'
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+upgrade_content = content[upgrade_start:upgrade_end]
 
-
-def upgrade() -> None:
+# We want to conditionally create the tables
+new_upgrade_content = """def upgrade() -> None:
     bind = op.get_bind()
     inspector = inspect(bind)
 
@@ -102,7 +94,9 @@ def upgrade() -> None:
         op.create_index('ix_safety_zones_latitude', 'safety_zones', ['latitude'])
         op.create_index('ix_safety_zones_longitude', 'safety_zones', ['longitude'])
 
+"""
 
-def downgrade() -> None:
-    op.drop_table('safety_zones')
-    op.drop_table('police_stations')
+content = content.replace(upgrade_content, new_upgrade_content)
+
+with open(file_path, "w") as f:
+    f.write(content)
