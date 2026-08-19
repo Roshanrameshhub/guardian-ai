@@ -1,0 +1,38 @@
+{
+  "project_info": {
+    "project_number": "638591615239",
+    "project_id": "guardian-ai-505705",
+    "storage_bucket": "guardian-ai-505705.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:638591615239:android:da26cf1870831548c945a2",
+        "android_client_info": {
+          "package_name": "com.guardianai.guardian_ai"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "638591615239-q9ggn1oo47015msgb982egplt3mhigcf.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.guardianai.guardian_ai",
+            "certificate_hash": "e7871ab17bc79c1614aa07f73041940f278336df"
+          }
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCzUwwmRGY5hbdKUE0Wmxc-cuVkcrFljV8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Web OAuth client ID from Google Cloud Console.
+        Used by google_sign_in on Android to request an ID token that the
+        Guardian backend can verify via Google's tokeninfo endpoint.
+
+        This is NOT a secret — it is intentionally public (client IDs for
+        web/Android OAuth are safe to embed in the app binary).
+
+        For this to work on a real device, the debug SHA-1 fingerprint MUST
+        be registered in Google Cloud Console for the project that owns this
+        client ID (project: guardian-ai / 638591615239).
+
+        To get the debug SHA-1:
+          keytool -list -v -keystore "%USERPROFILE%\.android\debug.keystore" -alias androiddebugkey -storepass android -keypass android
+    -->
+    <string name="default_web_client_id">638591615239-q9ggn1oo47015msgb982egplt3mhigcf.apps.googleusercontent.com</string>
+</resources>

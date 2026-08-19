@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Guardian AI - Safety Navigation</title>
+<!-- Tailwind CSS v3 CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Font: Plus Jakarta Sans -->
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              pink: '#FF2E88',
+              navy: '#0F1219',
+              dark: '#141721',
+              charcoal: '#1A1D27',
+            }
+          }
+        }
+      }
+    }
+  </script>
+<style data-purpose="custom-animations">
+    @keyframes pulse-pink {
+      0% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(255, 46, 136, 0.7); }
+      70% { transform: scale(1.1); opacity: 0.8; box-shadow: 0 0 0 15px rgba(255, 46, 136, 0); }
+      100% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(255, 46, 136, 0); }
+    }
+    .pulse-glow {
+      animation: pulse-pink 2s infinite;
+    }
+
+    @keyframes rotate-slow {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .rotating-border {
+      animation: rotate-slow 10s linear infinite;
+    }
+  </style>
+<style data-purpose="glassmorphism">
+    .glass-bg {
+      background: rgba(26, 29, 39, 0.7);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .glass-search {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+  </style>
+<style data-purpose="map-styling">
+    .map-container {
+      background: linear-gradient(to bottom, #1D102D 0%, #0F1219 100%);
+      position: relative;
+      overflow: hidden;
+    }
+    /* SVG Map Path Glow */
+    .route-glow {
+      filter: drop-shadow(0 0 8px #FF2E88);
+    }
+    .landmark-glow {
+      filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.4));
+    }
+    /* Grid lines for map feel */
+    .map-grid {
+      background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+  </style>
+</head>
+<body class="bg-black flex items-center justify-center min-h-screen font-sans text-white antialiased">
+<!-- BEGIN: Mobile Device Frame -->
+<main class="w-[390px] h-[844px] bg-brand-navy rounded-[48px] overflow-hidden shadow-2xl relative border-[8px] border-[#1A1D27] flex flex-col">
+<!-- BEGIN: StatusBar -->
+<div class="h-11 px-8 flex justify-between items-center z-50">
+<span class="text-sm font-semibold">9:41</span>
+<div class="flex gap-1.5 items-center">
+<svg class="w-4 h-4" fill="currentColor" viewbox="0 0 20 20"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"></path></svg>
+<svg class="w-4 h-4" fill="currentColor" viewbox="0 0 20 20"><path clip-rule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 8V5a3 3 0 013-3h5c.256 0 .512.098.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" fill-rule="evenodd"></path></svg>
+<div class="w-6 h-3 border border-white/40 rounded-sm relative">
+<div class="absolute inset-0.5 bg-white rounded-px w-3"></div>
+</div>
+</div>
+</div>
+<!-- END: StatusBar -->
+<!-- BEGIN: Navigation Header Overlay -->
+<div class="absolute top-12 left-0 right-0 z-40 px-4 space-y-4">
+<!-- Search Row -->
+<div class="flex items-center gap-3">
+<button class="w-10 h-10 flex items-center justify-center rounded-full glass-bg" data-purpose="back-button">
+<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</button>
+<div class="flex-1 glass-search rounded-full h-10 px-4 flex items-center justify-between">
+<span class="text-white/60 text-sm">Where do you want to go?</span>
+<svg class="w-4 h-4 text-white/60" fill="currentColor" viewbox="0 0 20 20"><path clip-rule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" fill-rule="evenodd"></path></svg>
+</div>
+</div>
+<!-- Filter Chips -->
+<div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+<button class="flex items-center gap-2 bg-brand-pink text-white px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap">
+<svg class="w-3 h-3" fill="currentColor" viewbox="0 0 20 20"><path clip-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 4.946-2.597 9.29-6.505 11.791a.75.75 0 01-.83 0C6.763 16.29 4.166 11.945 4.166 7.001c0-.68.056-1.35.166-2.001zm9.497 1.147a.75.75 0 00-1.151-.972L7.53 8.651 6.31 7.736a.75.75 0 00-.914 1.192l1.75 1.312a.75.75 0 001.033-.11l3.484-4.584z" fill-rule="evenodd"></path></svg>
+          Safe Route
+        </button>
+<button class="flex items-center gap-2 glass-bg text-white/90 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap">
+<svg class="w-3 h-3 text-blue-400" fill="currentColor" viewbox="0 0 20 20"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"></path></svg>
+          Police
+        </button>
+<button class="flex items-center gap-2 glass-bg text-white/90 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap">
+<svg class="w-3 h-3 text-red-400" fill="currentColor" viewbox="0 0 20 20"><path clip-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" fill-rule="evenodd"></path></svg>
+          Hospital
+        </button>
+<button class="flex items-center gap-2 glass-bg text-white/90 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap">
+<svg class="w-3 h-3 text-yellow-400" fill="currentColor" viewbox="0 0 20 20"><path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z"></path></svg>
+          Metro
+        </button>
+</div>
+</div>
+<!-- END: Navigation Header Overlay -->
+<!-- BEGIN: Map Canvas Container -->
+<div class="flex-1 map-container map-grid">
+<!-- Simulated Vector Map Layer -->
+<svg class="absolute inset-0 w-full h-full" data-purpose="map-vector-lines" fill="none" viewbox="0 0 390 844" xmlns="http://www.w3.org/2000/svg">
+<!-- Streets -->
+<path d="M-20 400 L410 400" stroke="white" stroke-opacity="0.05" stroke-width="2"></path>
+<path d="M200 -20 L200 864" stroke="white" stroke-opacity="0.05" stroke-width="2"></path>
+<path d="M50 0 L350 844" stroke="white" stroke-opacity="0.03" stroke-width="1"></path>
+<!-- District Labels -->
+<text fill="white" fill-opacity="0.1" font-size="12" font-weight="600" text-anchor="middle" x="195" y="215">ANNA NAGAR</text>
+<text fill="white" fill-opacity="0.1" font-size="10" font-weight="600" x="50" y="315">KILPAUK</text>
+<text fill="white" fill-opacity="0.1" font-size="10" font-weight="600" x="250" y="355">EGMORE</text>
+<text fill="white" fill-opacity="0.1" font-size="10" font-weight="600" x="40" y="515">GUINDY</text>
+<text fill="white" fill-opacity="0.1" font-size="10" font-weight="600" x="220" y="540">VELACHERY</text>
+<!-- The Glowing Pink Route -->
+<path class="route-glow" d="M162 610 C 180 580, 200 500, 240 450 C 270 410, 200 380, 240 330 C 270 280, 310 260, 246 215" fill="none" stroke="#FF2E88" stroke-linecap="round" stroke-width="6"></path>
+</svg>
+<!-- BEGIN: Landmarks & Markers -->
+<!-- Apollo Hospital -->
+<div class="absolute top-[245px] left-[170px] flex flex-col items-center">
+<div class="w-7 h-7 rounded-full bg-blue-500/20 border border-blue-400 flex items-center justify-center landmark-glow">
+<svg class="w-4 h-4 text-blue-400" fill="currentColor" viewbox="0 0 20 20"><path clip-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" fill-rule="evenodd"></path></svg>
+</div>
+<div class="mt-1 text-center">
+<p class="text-[10px] font-bold leading-tight">Apollo Hospital</p>
+<p class="text-[8px] text-white/50">Greams Road</p>
+</div>
+</div>
+<!-- Chennai Central Metro -->
+<div class="absolute top-[275px] left-[205px] flex flex-col items-center">
+<div class="w-6 h-6 rounded-full bg-indigo-500/20 border border-indigo-400 flex items-center justify-center landmark-glow">
+<svg class="w-3.5 h-3.5 text-indigo-400" fill="currentColor" viewbox="0 0 20 20"><path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z"></path></svg>
+</div>
+<p class="mt-1 text-[8px] font-semibold text-white/70">Chennai Central</p>
+</div>
+<!-- T Nagar Police -->
+<div class="absolute top-[350px] left-[175px] flex flex-col items-center">
+<div class="w-6 h-6 rounded-full bg-blue-600/20 border border-blue-500 flex items-center justify-center landmark-glow">
+<svg class="w-3.5 h-3.5 text-blue-500" fill="currentColor" viewbox="0 0 20 20"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"></path></svg>
+</div>
+<p class="mt-1 text-[8px] font-semibold text-white/70 text-center">T. Nagar<br/>Police Station</p>
+</div>
+<!-- Destination Pin -->
+<div class="absolute top-[200px] left-[240px] -translate-x-1/2 -translate-y-full">
+<div class="relative">
+<div class="w-8 h-8 rounded-full bg-brand-pink flex items-center justify-center border-4 border-white shadow-lg shadow-pink-500/50">
+<div class="w-1.5 h-1.5 rounded-full bg-white"></div>
+</div>
+<div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-white"></div>
+</div>
+</div>
+<!-- Current Location Pulsing Dot -->
+<div class="absolute top-[610px] left-[162px] -translate-x-1/2 -translate-y-1/2">
+<div class="relative flex items-center justify-center">
+<div class="absolute w-24 h-24 bg-brand-pink/5 rounded-full border border-brand-pink/20"></div>
+<div class="pulse-glow w-4 h-4 bg-brand-pink rounded-full border-2 border-white shadow-lg"></div>
+<!-- Orientation Arrow -->
+<svg class="absolute -top-4 w-4 h-4 text-white drop-shadow-md" fill="currentColor" viewbox="0 0 24 24"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"></path></svg>
+</div>
+</div>
+<!-- END: Landmarks & Markers -->
+<!-- Floating Controls -->
+<div class="absolute right-4 top-[500px] flex flex-col gap-3">
+<button class="w-12 h-12 glass-bg rounded-full flex items-center justify-center shadow-lg" data-purpose="recenter">
+<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</button>
+<button class="w-12 h-12 glass-bg rounded-full flex items-center justify-center shadow-lg" data-purpose="layers">
+<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</button>
+</div>
+</div>
+<!-- END: Map Canvas Container -->
+<!-- BEGIN: Route Summary Card -->
+<div class="absolute bottom-6 left-4 right-4 z-50 glass-bg rounded-[32px] p-6 shadow-2xl space-y-6" data-purpose="route-card">
+<!-- Drag Handle -->
+<div class="absolute top-3 left-1/2 -translate-x-1/2 w-10 h-1 bg-white/20 rounded-full"></div>
+<!-- Main Info Row -->
+<div class="flex justify-between items-start">
+<div class="space-y-3">
+<div>
+<p class="text-[10px] text-white/50 uppercase tracking-wider font-semibold">From</p>
+<p class="text-sm font-bold">Keelkattalai</p>
+</div>
+<div>
+<p class="text-[10px] text-white/50 uppercase tracking-wider font-semibold">To</p>
+<p class="text-sm font-bold">T. Nagar, Chennai</p>
+</div>
+</div>
+<div class="flex flex-col items-center">
+<div class="relative w-20 h-20 flex items-center justify-center">
+<!-- Semi-circular progress representation -->
+<svg class="absolute inset-0 w-full h-full -rotate-90" viewbox="0 0 100 100">
+<circle cx="50" cy="50" fill="none" r="40" stroke="rgba(255,255,255,0.1)" stroke-width="8"></circle>
+<circle cx="50" cy="50" fill="none" r="40" stroke="#FF2E88" stroke-dasharray="180 251" stroke-width="8"></circle>
+</svg>
+<div class="text-center">
+<span class="text-2xl font-black block">24</span>
+<span class="text-[8px] text-white/50 uppercase block">Safety Score</span>
+<span class="text-[10px] font-bold text-pink-400 block mt-0.5">Good</span>
+</div>
+</div>
+</div>
+<div class="text-right space-y-3">
+<div>
+<p class="text-sm font-bold"><span class="text-2xl">32</span> min</p>
+<p class="text-[10px] text-white/50 uppercase tracking-wider font-semibold">ETA</p>
+<p class="text-[10px] text-white/70">Normal Traffic</p>
+</div>
+<div>
+<p class="text-sm font-bold"><span class="text-lg">14.6</span> km</p>
+<p class="text-[10px] text-white/50 uppercase tracking-wider font-semibold">DISTANCE</p>
+<p class="text-[10px] text-white/70">via GST Road</p>
+</div>
+</div>
+</div>
+<!-- Stats Grid -->
+<div class="grid grid-cols-4 gap-2 pt-2 border-t border-white/10">
+<div class="text-center">
+<p class="text-[9px] text-white/40 mb-0.5">Traffic</p>
+<p class="text-[10px] font-bold text-green-400">Light</p>
+</div>
+<div class="text-center">
+<p class="text-[9px] text-white/40 mb-0.5">Police</p>
+<p class="text-[10px] font-bold">5 Nearby</p>
+</div>
+<div class="text-center">
+<p class="text-[9px] text-white/40 mb-0.5">Hospitals</p>
+<p class="text-[10px] font-bold">3 Nearby</p>
+</div>
+<div class="text-center">
+<p class="text-[9px] text-white/40 mb-0.5">Metro</p>
+<p class="text-[10px] font-bold">2.1 km</p>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="flex gap-3">
+<button class="flex-1 h-14 bg-brand-pink rounded-2xl flex items-center justify-center gap-3 shadow-xl shadow-pink-500/30 active:scale-95 transition-transform">
+<div class="w-6 h-6 rounded-full bg-white flex items-center justify-center">
+<svg class="w-4 h-4 text-brand-pink" fill="currentColor" viewbox="0 0 20 20"><path clip-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" fill-rule="evenodd"></path></svg>
+</div>
+<span class="text-sm font-bold tracking-wide">Start Navigation</span>
+</button>
+<button class="w-14 h-14 glass-bg rounded-2xl flex items-center justify-center active:scale-95 transition-transform" data-purpose="share-route">
+<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6a3 3 0 100-2.684m0 2.684l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</button>
+</div>
+</div>
+<!-- END: Route Summary Card -->
+<!-- Home Indicator -->
+<div class="absolute bottom-2 left-1/2 -translate-x-1/2 w-32 h-1 bg-white/40 rounded-full z-50"></div>
+</main>
+<!-- END: Mobile Device Frame -->
+<!-- BEGIN: Desktop Context Panels (Optional decoration matching screenshot sides) -->
+<div class="fixed left-8 top-1/2 -translate-y-1/2 w-72 hidden xl:block space-y-6">
+<h1 class="text-brand-pink text-2xl font-bold tracking-tight mb-8">MAP SCREEN ENHANCEMENT PROMPT</h1>
+<div class="space-y-4 text-white/70 text-xs leading-relaxed">
+<p>Enhance the map screen of the Guardian AI Safety Suite to match the premium quality and dark theme...</p>
+<ul class="list-decimal list-inside space-y-2 marker:text-brand-pink marker:font-bold">
+<li>Modern clean vector map style</li>
+<li>Dark navy / charcoal base</li>
+<li>Vibrant pink route line</li>
+<li>Pulsing pink location dot</li>
+<li>Glassmorphism UI</li>
+</ul>
+</div>
+</div>
+<div class="fixed right-8 top-1/2 -translate-y-1/2 w-64 hidden xl:block space-y-4">
+<div class="glass-bg rounded-3xl p-6 border border-white/5">
+<h3 class="text-brand-pink text-sm font-bold mb-4 uppercase tracking-widest">Map Legend</h3>
+<ul class="space-y-4 text-xs">
+<li class="flex items-center gap-3"><div class="w-4 h-4 bg-blue-500 rounded-full"></div> Police Station</li>
+<li class="flex items-center gap-3"><div class="w-4 h-4 bg-red-500 rounded-full"></div> Hospital</li>
+<li class="flex items-center gap-3"><div class="w-4 h-4 bg-indigo-500 rounded-full"></div> Metro Station</li>
+<li class="flex items-center gap-3"><div class="w-4 h-4 bg-brand-pink rounded-full"></div> Destination</li>
+</ul>
+</div>
+<div class="glass-bg rounded-3xl p-6 border border-white/5">
+<div class="flex items-center gap-2 mb-3">
+<div class="w-3 h-3 bg-blue-400 rounded-full"></div>
+<h3 class="text-white text-sm font-bold">Quick Info</h3>
+</div>
+<p class="text-xs text-white/60 leading-normal">You are in a Moderate Safety Zone. Stay vigilant.</p>
+<button class="mt-4 text-xs font-bold text-white/40 border border-white/20 px-4 py-2 rounded-lg hover:bg-white/5 transition-colors">View Details</button>
+</div>
+</div>
+<!-- END: Desktop Context Panels -->
+</body></html>

@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Guardian AI - Guardian Mode</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-fixed": "#3e0022",
+                    "primary-container": "#ff4a90",
+                    "inverse-surface": "#dae2fd",
+                    "surface-container-lowest": "#060e20",
+                    "on-surface": "#dae2fd",
+                    "outline": "#aa8890",
+                    "tertiary-fixed": "#f0dbff",
+                    "outline-variant": "#5b3f46",
+                    "surface-bright": "#31394d",
+                    "on-tertiary": "#490080",
+                    "on-surface-variant": "#e3bdc5",
+                    "tertiary": "#ddb7ff",
+                    "error": "#ffb4ab",
+                    "primary-fixed-dim": "#ffb1c5",
+                    "surface-container-highest": "#2d3449",
+                    "tertiary-container": "#b76dff",
+                    "inverse-on-surface": "#283044",
+                    "on-primary-fixed": "#3f001b",
+                    "error-container": "#93000a",
+                    "secondary-fixed-dim": "#ffb0cd",
+                    "on-tertiary-fixed-variant": "#6900b3",
+                    "on-error": "#690005",
+                    "on-error-container": "#ffdad6",
+                    "secondary": "#ffb0cd",
+                    "on-primary-fixed-variant": "#8e0046",
+                    "on-tertiary-container": "#400071",
+                    "on-primary-container": "#590029",
+                    "on-secondary-container": "#ffbad3",
+                    "secondary-container": "#aa0266",
+                    "secondary-fixed": "#ffd9e4",
+                    "on-background": "#dae2fd",
+                    "surface-variant": "#2d3449",
+                    "primary-fixed": "#ffd9e1",
+                    "on-secondary": "#640039",
+                    "background": "#0b1326",
+                    "inverse-primary": "#ba005d",
+                    "on-secondary-fixed-variant": "#8c0053",
+                    "surface-container-low": "#131b2e",
+                    "on-tertiary-fixed": "#2c0051",
+                    "primary": "#ffb1c5",
+                    "surface-dim": "#0b1326",
+                    "on-primary": "#650030",
+                    "surface-container": "#171f33",
+                    "surface-container-high": "#222a3d",
+                    "surface-tint": "#ffb1c5",
+                    "tertiary-fixed-dim": "#ddb7ff",
+                    "surface": "#0b1326"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "stack-gap": "16px",
+                    "gutter": "16px",
+                    "container-padding": "24px",
+                    "section-gap": "40px",
+                    "base": "8px"
+            },
+            "fontFamily": {
+                    "display-lg": ["Plus Jakarta Sans"],
+                    "headline-lg": ["Plus Jakarta Sans"],
+                    "headline-md": ["Plus Jakarta Sans"],
+                    "body-lg": ["Plus Jakarta Sans"],
+                    "body-md": ["Plus Jakarta Sans"],
+                    "display-lg-mobile": ["Plus Jakarta Sans"],
+                    "label-sm": ["Plus Jakarta Sans"],
+                    "label-lg": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "display-lg-mobile": ["36px", {"lineHeight": "42px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                    "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #0b1326;
+            color: #dae2fd;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow-x: hidden;
+        }
+
+        .glass-card {
+            background: rgba(45, 52, 73, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 0.5px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        .primary-glow {
+            box-shadow: 0 0 30px rgba(255, 46, 136, 0.4);
+        }
+
+        .pulse-ring {
+            animation: pulse 3s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.8; }
+        }
+
+        .shimmer {
+            background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite linear;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        .progress-gradient {
+            background: linear-gradient(90deg, #ff4a90 0%, #b76dff 100%);
+        }
+
+        /* Hide scrollbars */
+        ::-webkit-scrollbar { display: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="flex flex-col min-h-screen">
+<!-- Top AppBar -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-gutter py-4 bg-surface/80 dark:bg-surface/80 backdrop-blur-xl border-b border-white/10 shadow-sm">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-primary-container/20 flex items-center justify-center border border-primary/20">
+<img class="w-full h-full object-cover" data-alt="A professional close-up studio portrait of a woman with a confident and calm expression, subtly lit with cinematic pink and purple backlighting to match the Guardian AI brand aesthetic. She is wearing high-end tech-enabled jewelry. The style is modern corporate luxury with soft depth-of-field." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBYNDg7jKjIj3Y9gXw96b8jKsOrMaresoibyy_XdKme9Rits5RF78efKV1xLZuH07iLKC4VEBIWEyrL56s5AHWqlB-YOs-BfOEU3GIDsndrjo7bg61_CC882O2HkE9tCo9QcE3hZ8ecG2kIMIfnLHezr5SBUEhb6KTZ77GFdXQXBeknkfETEVZwzdawpqxXclztUh8GDFoWrwTQlI3ccD7nXko4NkaXlywZ9_PibV0fLKbDmM7QF1oj8IHXgT0_2ytGXzyP8NlKbzM"/>
+</div>
+<h1 class="font-display-lg text-display-lg-mobile text-primary-container tracking-tight">Guardian AI</h1>
+</div>
+<button class="material-symbols-outlined text-primary hover:opacity-80 transition-opacity active:scale-95 transition-transform" data-icon="notifications">notifications</button>
+</header>
+<main class="flex-grow pt-24 pb-32 px-gutter space-y-6">
+<!-- Status Hero Section -->
+<section class="relative flex flex-col items-center justify-center py-8">
+<div class="absolute inset-0 z-0 opacity-20 pointer-events-none">
+<!-- Atmospheric background element -->
+<div class="w-full h-full flex items-center justify-center">
+<div class="w-64 h-64 bg-primary-container rounded-full blur-[100px] opacity-40"></div>
+</div>
+</div>
+<!-- Glowing Ring -->
+<div class="relative z-10 w-64 h-64 md:w-80 md:h-80 flex items-center justify-center">
+<svg class="absolute inset-0 w-full h-full -rotate-90">
+<!-- Base Track -->
+<circle class="text-white/5" cx="50%" cy="50%" fill="transparent" r="45%" stroke="currentColor" stroke-width="8"></circle>
+<!-- Animated Gradient Ring -->
+<circle class="pulse-ring" cx="50%" cy="50%" fill="transparent" r="45%" stroke="url(#gradient)" stroke-dasharray="283" stroke-dashoffset="70" stroke-linecap="round" stroke-width="10" style="filter: drop-shadow(0 0 12px #ff4a90);"></circle>
+<defs>
+<lineargradient id="gradient" x1="0%" x2="100%" y1="0%">
+<stop offset="0%" stop-color="#ff4a90"></stop>
+<stop offset="100%" stop-color="#b76dff"></stop>
+</lineargradient>
+</defs>
+</svg>
+<div class="text-center z-20">
+<span class="font-label-lg text-label-lg text-primary tracking-widest uppercase mb-1 block">Guardian Mode</span>
+<h2 class="font-display-lg text-display-lg-mobile text-on-surface">ACTIVE</h2>
+<div class="flex items-center justify-center gap-2 mt-2">
+<span class="w-2 h-2 rounded-full bg-primary-container animate-pulse"></span>
+<p class="font-body-md text-body-md text-on-surface-variant">Monitoring Surroundings</p>
+</div>
+</div>
+</div>
+<!-- OFF/ON Toggle -->
+<div class="mt-8 flex items-center gap-4 glass-card px-6 py-3 rounded-full">
+<span class="font-label-lg text-label-lg text-on-surface-variant">Guardian Mode</span>
+<div class="w-14 h-8 bg-primary-container rounded-full relative flex items-center px-1 cursor-pointer transition-colors active:scale-95">
+<div class="absolute right-1 w-6 h-6 bg-white rounded-full shadow-lg"></div>
+</div>
+</div>
+</section>
+<!-- Metrics Bento Grid -->
+<section class="grid grid-cols-2 gap-4">
+<!-- Voice Monitoring -->
+<div class="glass-card rounded-2xl p-4 flex flex-col justify-between min-h-[140px]">
+<div class="flex justify-between items-start">
+<span class="material-symbols-outlined text-primary-container" data-icon="mic">mic</span>
+<span class="font-label-sm text-label-sm text-primary-container font-bold px-2 py-0.5 bg-primary-container/10 rounded-full">LIVE</span>
+</div>
+<div>
+<h3 class="font-label-lg text-label-lg text-on-surface-variant">Voice Sync</h3>
+<p class="font-headline-md text-headline-md text-on-surface">Listening</p>
+</div>
+</div>
+<!-- Battery & Speed -->
+<div class="glass-card rounded-2xl p-4 flex flex-col justify-between min-h-[140px]">
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-on-surface-variant text-sm" data-icon="battery_5_bar">battery_5_bar</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">88%</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-on-surface-variant text-sm" data-icon="speed">speed</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">1.2 km/h</span>
+</div>
+</div>
+<div>
+<h3 class="font-label-lg text-label-lg text-on-surface-variant">Speed Status</h3>
+<p class="font-headline-md text-headline-md text-on-surface">Walking</p>
+</div>
+</div>
+<!-- Journey Progress (Span 2) -->
+<div class="col-span-2 glass-card rounded-2xl p-5 space-y-4">
+<div class="flex justify-between items-end">
+<div>
+<h3 class="font-label-lg text-label-lg text-on-surface-variant">Estimated Arrival</h3>
+<p class="font-headline-md text-headline-md text-on-surface">09:15 PM <span class="text-primary-container font-normal text-body-md">(22 min left)</span></p>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="map">map</span>
+</div>
+<!-- Progress Bar -->
+<div class="space-y-2">
+<div class="w-full h-2 bg-white/5 rounded-full overflow-hidden">
+<div class="h-full progress-gradient w-[42%] rounded-full relative">
+<div class="absolute right-0 top-0 w-2 h-full bg-white/40 blur-sm"></div>
+</div>
+</div>
+<div class="flex justify-between font-label-sm text-label-sm text-on-surface-variant">
+<span>Anna Salai</span>
+<span>Besant Nagar</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Quick Action Toggles -->
+<section class="grid grid-cols-2 gap-4">
+<button class="glass-card hover:bg-white/5 transition-colors active:scale-95 p-4 rounded-2xl flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface" data-icon="flashlight_on">flashlight_on</span>
+</div>
+<span class="font-label-lg text-label-lg text-on-surface">Flashlight</span>
+</button>
+<button class="glass-card hover:bg-white/5 transition-colors active:scale-95 p-4 rounded-2xl flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface" data-icon="record_voice_over">record_voice_over</span>
+</div>
+<span class="font-label-lg text-label-lg text-on-surface">Audio Log</span>
+</button>
+</section>
+<!-- Map Snippet / Context -->
+<section class="glass-card rounded-2xl overflow-hidden aspect-[16/9] relative group cursor-pointer">
+<div class="absolute inset-0 shimmer opacity-20 pointer-events-none"></div>
+<div class="absolute inset-0 bg-[url('placeholder')] bg-cover bg-center" data-alt="A stylized minimalist digital dark-mode map of Anna Salai and Teynampet area in Chennai at night. The map shows street lines in deep charcoal and paths in soft lavender, with a glowing pink pulse marker indicating the user's current location near a prominent tech park. Cinematic top-down view with high-end fintech UI aesthetic."></div>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+<div class="absolute bottom-4 left-4 flex items-center gap-3">
+<div class="p-2 bg-primary-container rounded-lg shadow-lg">
+<span class="material-symbols-outlined text-on-primary-container text-sm" data-icon="near_me">near_me</span>
+</div>
+<div>
+<p class="font-label-sm text-label-sm text-white/70">Current Location</p>
+<p class="font-body-md text-body-md text-white font-semibold">Anna Salai, Teynampet</p>
+</div>
+</div>
+</section>
+<!-- SOS Emergency Alarm Button -->
+<section class="py-4">
+<button class="w-full bg-primary-container hover:bg-primary-container/90 transition-all active:scale-95 py-6 rounded-2xl shadow-xl shadow-primary-container/20 flex flex-col items-center justify-center gap-2 group">
+<div class="relative">
+<span class="material-symbols-outlined text-white text-4xl group-hover:scale-110 transition-transform" data-icon="emergency_share" data-weight="fill">emergency_share</span>
+<div class="absolute -inset-2 bg-white/30 rounded-full blur-xl animate-pulse"></div>
+</div>
+<span class="font-headline-lg text-headline-lg text-on-primary-container uppercase tracking-widest">Hold to Alarm</span>
+<p class="font-label-sm text-label-sm text-on-primary-container/80 px-8 text-center">Alerts Emergency Contacts &amp; Professional Response Team</p>
+</button>
+</section>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center px-4 pb-8 pt-3 bg-surface-container/60 dark:bg-surface-container/60 backdrop-blur-2xl rounded-t-xl border-t border-white/5 shadow-[0px_-4px_24px_rgba(0,0,0,0.4)]">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-white/5 transition-colors active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-white/5 transition-colors active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="map">map</span>
+<span class="font-label-sm text-label-sm">Map</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="shield" style="font-variation-settings: 'FILL' 1;">shield</span>
+<span class="font-label-sm text-label-sm">Guardian</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-white/5 transition-colors active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span class="font-label-sm text-label-sm">Activity</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-white/5 transition-colors active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-sm text-label-sm">Profile</span>
+</a>
+</nav>
+<!-- Micro-interaction Script -->
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const statusToggle = document.querySelector('.w-14.h-8');
+            let isActive = true;
+
+            statusToggle.addEventListener('click', () => {
+                isActive = !isActive;
+                const knob = statusToggle.querySelector('div');
+                const text = document.querySelector('h2');
+                const pulse = document.querySelector('.pulse-ring');
+                
+                if (isActive) {
+                    statusToggle.classList.replace('bg-white/20', 'bg-primary-container');
+                    knob.style.transform = 'translateX(0)';
+                    knob.classList.add('right-1');
+                    knob.classList.remove('left-1');
+                    text.innerText = 'ACTIVE';
+                    text.classList.replace('text-on-surface-variant', 'text-on-surface');
+                    pulse.style.display = 'block';
+                } else {
+                    statusToggle.classList.replace('bg-primary-container', 'bg-white/20');
+                    knob.style.transform = 'translateX(-24px)';
+                    knob.classList.remove('right-1');
+                    knob.classList.add('left-1');
+                    text.innerText = 'STANDBY';
+                    text.classList.replace('text-on-surface', 'text-on-surface-variant');
+                    pulse.style.display = 'none';
+                }
+            });
+
+            // Simulate progress ring animation for initial load
+            const circle = document.querySelector('circle.pulse-ring');
+            if (circle) {
+                circle.style.strokeDashoffset = '283';
+                setTimeout(() => {
+                    circle.style.transition = 'stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1)';
+                    circle.style.strokeDashoffset = '70';
+                }, 300);
+            }
+        });
+    </script>
+</body></html>

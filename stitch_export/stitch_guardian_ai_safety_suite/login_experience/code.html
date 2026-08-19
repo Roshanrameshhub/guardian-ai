@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Guardian AI - Login</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-background": "#dae2fd",
+                        "surface-container-high": "#222a3d",
+                        "primary-container": "#ff4a90",
+                        "secondary-fixed": "#ffd9e4",
+                        "tertiary-container": "#b76dff",
+                        "background": "#0b1326",
+                        "tertiary-fixed-dim": "#ddb7ff",
+                        "on-surface": "#dae2fd",
+                        "on-error": "#690005",
+                        "surface-container": "#171f33",
+                        "surface-container-highest": "#2d3449",
+                        "on-secondary-fixed-variant": "#8c0053",
+                        "surface-container-low": "#131b2e",
+                        "secondary-fixed-dim": "#ffb0cd",
+                        "on-tertiary-container": "#400071",
+                        "primary": "#ffb1c5",
+                        "on-surface-variant": "#e3bdc5",
+                        "surface-tint": "#ffb1c5",
+                        "secondary-container": "#aa0266",
+                        "secondary": "#ffb0cd",
+                        "on-secondary-container": "#ffbad3",
+                        "on-tertiary-fixed": "#2c0051",
+                        "outline": "#aa8890",
+                        "surface-container-lowest": "#060e20",
+                        "surface-variant": "#2d3449",
+                        "inverse-primary": "#ba005d",
+                        "surface-bright": "#31394d",
+                        "on-error-container": "#ffdad6",
+                        "on-tertiary": "#490080",
+                        "on-primary-fixed-variant": "#8e0046",
+                        "on-primary-fixed": "#3f001b",
+                        "inverse-on-surface": "#283044",
+                        "inverse-surface": "#dae2fd",
+                        "error": "#ffb4ab",
+                        "error-container": "#93000a",
+                        "tertiary": "#ddb7ff",
+                        "surface": "#0b1326",
+                        "outline-variant": "#5b3f46",
+                        "surface-dim": "#0b1326",
+                        "primary-fixed": "#ffd9e1",
+                        "on-secondary": "#640039",
+                        "on-primary": "#650030",
+                        "on-tertiary-fixed-variant": "#6900b3",
+                        "on-secondary-fixed": "#3e0022",
+                        "on-primary-container": "#590029",
+                        "tertiary-fixed": "#f0dbff",
+                        "primary-fixed-dim": "#ffb1c5"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-gap": "16px",
+                        "section-gap": "40px",
+                        "container-padding": "24px",
+                        "gutter": "16px",
+                        "base": "8px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "display-lg-mobile": ["Plus Jakarta Sans"],
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "label-lg": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "display-lg": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "display-lg-mobile": ["36px", { "lineHeight": "42px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #0b1326;
+            color: #dae2fd;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow-x: hidden;
+        }
+
+        .glass-card {
+            background: rgba(23, 31, 51, 0.4);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 0.5px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .bg-glow-pink {
+            background: radial-gradient(circle, rgba(255, 46, 136, 0.15) 0%, rgba(11, 19, 38, 0) 70%);
+        }
+
+        .bg-glow-purple {
+            background: radial-gradient(circle, rgba(168, 85, 247, 0.1) 0%, rgba(11, 19, 38, 0) 70%);
+        }
+
+        .route-path {
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            animation: dash 10s linear infinite;
+        }
+
+        @keyframes dash {
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
+
+        .primary-gradient-btn {
+            background: linear-gradient(135deg, #ff4a90 0%, #ff2e88 100%);
+            box-shadow: 0 8px 20px rgba(255, 46, 136, 0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .primary-gradient-btn:active {
+            transform: scale(0.96);
+            box-shadow: 0 4px 10px rgba(255, 46, 136, 0.2);
+        }
+
+        .social-btn {
+            background: rgba(45, 52, 73, 0.5);
+            border: 0.5px solid rgba(255, 255, 255, 0.1);
+            transition: background 0.3s ease;
+        }
+
+        .social-btn:hover {
+            background: rgba(45, 52, 73, 0.8);
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center py-12 px-6">
+<!-- Atmospheric Background Elements -->
+<div class="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
+<div class="absolute -top-[10%] -left-[10%] w-[60%] h-[60%] bg-glow-pink opacity-50"></div>
+<div class="absolute -bottom-[10%] -right-[10%] w-[60%] h-[60%] bg-glow-purple opacity-50"></div>
+<!-- Abstract Route Lines SVG -->
+<svg class="absolute inset-0 w-full h-full opacity-20" viewbox="0 0 1000 1000" xmlns="http://www.w3.org/2000/svg">
+<path class="route-path" d="M -100 800 Q 200 600 400 850 T 900 700" fill="none" stroke="url(#pinkGradient)" stroke-width="2"></path>
+<path class="route-path" d="M 1100 200 Q 800 400 600 150 T 100 300" fill="none" stroke="url(#purpleGradient)" stroke-width="1.5" style="animation-delay: -5s"></path>
+<defs>
+<lineargradient id="pinkGradient" x1="0%" x2="100%" y1="0%" y2="100%">
+<stop offset="0%" style="stop-color:#ff4a90;stop-opacity:0"></stop>
+<stop offset="50%" style="stop-color:#ff4a90;stop-opacity:1"></stop>
+<stop offset="100%" style="stop-color:#ff4a90;stop-opacity:0"></stop>
+</lineargradient>
+<lineargradient id="purpleGradient" x1="0%" x2="100%" y1="0%" y2="100%">
+<stop offset="0%" style="stop-color:#b76dff;stop-opacity:0"></stop>
+<stop offset="50%" style="stop-color:#b76dff;stop-opacity:1"></stop>
+<stop offset="100%" style="stop-color:#b76dff;stop-opacity:0"></stop>
+</lineargradient>
+</defs>
+</svg>
+</div>
+<!-- Main Content Container -->
+<main class="w-full max-w-lg flex flex-col items-center space-y-8 z-10">
+<!-- Hero Illustration -->
+<div class="w-full max-w-[280px] md:max-w-[340px] drop-shadow-[0_0_50px_rgba(255,74,144,0.2)]">
+<img class="w-full h-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDeBc56R2jQJZDzMKyU2ZrzIpuTjce_b3v6aayCeyDJVtIJDjBypp_6qYq7Qc1_Uoku_s9EV5hK2ib39RnJgthmRua_kuYw1rrJynVelhYPeA5YZhezwW-iBOAHtmEKG93pF_-YDNNZ4h4158mWAZp2pqk3_GeG_1ZCqx-yF2Gfa5GnlCkEc-6lesA3JkA7lqGkJiizY6Klncj2_p26C9oTtYhvdofEuLUYXYznoziaefgW3hrfxkT94wpdcUkwjIv7B4n9g02w1I8"/>
+</div>
+<!-- Header Section -->
+<div class="text-center space-y-3">
+<h1 class="font-display-lg-mobile text-display-lg-mobile text-on-surface tracking-tight">
+                Your Safety Starts Here
+            </h1>
+<p class="font-body-md text-on-surface-variant max-w-sm mx-auto opacity-80">
+                Travel smarter, stay protected, and keep your loved ones connected wherever you go.
+            </p>
+</div>
+<!-- Login Form Card -->
+<div class="w-full glass-card rounded-2xl p-8 space-y-6">
+<form class="space-y-5" id="loginForm">
+<!-- Email Field -->
+<div class="space-y-2">
+<label class="font-label-lg text-label-lg text-on-surface-variant block px-1">Email Address</label>
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors">mail</span>
+<input class="w-full bg-surface-container-highest/30 border-outline/20 rounded-xl py-3.5 pl-12 pr-4 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-outline/50 outline-none" placeholder="name@company.com" type="email"/>
+</div>
+</div>
+<!-- Password Field -->
+<div class="space-y-2">
+<div class="flex justify-between items-center px-1">
+<label class="font-label-lg text-label-lg text-on-surface-variant">Password</label>
+<a class="font-label-sm text-label-sm text-primary hover:text-primary-container transition-colors" href="#">Forgot Password?</a>
+</div>
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline group-focus-within:text-primary transition-colors">lock</span>
+<input class="w-full bg-surface-container-highest/30 border-outline/20 rounded-xl py-3.5 pl-12 pr-12 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary transition-all placeholder:text-outline/50 outline-none" id="passwordInput" placeholder="••••••••" type="password"/>
+<button class="absolute right-4 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface transition-colors" onclick="togglePassword()" type="button">
+<span class="material-symbols-outlined" id="eyeIcon">visibility</span>
+</button>
+</div>
+</div>
+<!-- Remember Me -->
+<div class="flex items-center space-x-2 px-1">
+<input class="w-4 h-4 rounded border-outline/30 bg-surface-container text-primary focus:ring-offset-background focus:ring-primary" id="remember" type="checkbox"/>
+<label class="font-label-sm text-label-sm text-on-surface-variant cursor-pointer" for="remember">Remember me for 30 days</label>
+</div>
+<!-- Sign In Button -->
+<button class="w-full primary-gradient-btn text-on-primary font-label-lg text-label-lg py-4 rounded-xl flex items-center justify-center space-x-2" type="submit">
+<span>Sign In</span>
+<span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</form>
+<!-- Divider -->
+<div class="flex items-center space-x-4 opacity-30">
+<div class="h-px flex-1 bg-outline"></div>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">or</span>
+<div class="h-px flex-1 bg-outline"></div>
+</div>
+<!-- Social Logins -->
+<div class="grid grid-cols-2 gap-4">
+<button class="social-btn flex items-center justify-center space-x-2 py-3.5 rounded-xl text-on-surface font-label-lg text-label-lg">
+<svg class="w-5 h-5" viewbox="0 0 24 24">
+<path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="currentColor"></path>
+<path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="currentColor"></path>
+<path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="currentColor"></path>
+<path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 12-4.53z" fill="currentColor"></path>
+</svg>
+<span>Google</span>
+</button>
+<button class="social-btn flex items-center justify-center space-x-2 py-3.5 rounded-xl text-on-surface font-label-lg text-label-lg">
+<svg class="w-5 h-5" viewbox="0 0 24 24">
+<path d="M17.05 20.28c-.96 0-2.04-.6-3.22-.6-1.2 0-2.3.61-3.23.61-1.61 0-4.01-3.32-4.01-6.44 0-3.08 1.93-4.7 3.79-4.7 1.01 0 1.8.61 2.53.61s1.58-.65 2.65-.65c1.06 0 2.21.51 2.97 1.61-2.58 1.51-2.16 4.95.42 6.06-.55 1.34-1.35 2.51-1.9 3.51zM13.03 7.42c-.08-2.33 1.93-4.33 4.2-4.42.2 2.68-2.3 4.63-4.2 4.42z" fill="currentColor"></path>
+</svg>
+<span>Apple</span>
+</button>
+</div>
+<!-- Footer Link -->
+<p class="text-center font-body-md text-on-surface-variant">
+                New to Guardian AI? 
+                <a class="text-primary font-semibold hover:underline decoration-primary/30" href="#">Create Account</a>
+</p>
+</div>
+<!-- Compliance & Privacy Footnote -->
+<div class="flex items-center space-x-3 opacity-60 hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-primary text-[20px]">verified_user</span>
+<p class="font-label-sm text-label-sm text-on-surface-variant max-w-[280px]">
+                Guardian AI never shares your live location without your permission.
+            </p>
+</div>
+</main>
+<script>
+        function togglePassword() {
+            const passwordInput = document.getElementById('passwordInput');
+            const eyeIcon = document.getElementById('eyeIcon');
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                eyeIcon.innerText = 'visibility_off';
+            } else {
+                passwordInput.type = 'password';
+                eyeIcon.innerText = 'visibility';
+            }
+        }
+
+        // Lightweight entrance animation
+        document.addEventListener('DOMContentLoaded', () => {
+            const main = document.querySelector('main');
+            main.style.opacity = '0';
+            main.style.transform = 'translateY(20px)';
+            main.style.transition = 'all 1s cubic-bezier(0.2, 0.8, 0.2, 1)';
+            
+            setTimeout(() => {
+                main.style.opacity = '1';
+                main.style.transform = 'translateY(0)';
+            }, 100);
+        });
+
+        // Form submission prevent default for demo
+        document.getElementById('loginForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            console.log('Sign in attempted');
+        });
+    </script>
+</body></html>

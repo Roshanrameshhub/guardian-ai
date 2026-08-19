@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Guardian AI - Profile &amp; Settings</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #0b1326;
+            color: #dae2fd;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 0.5px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+        .pink-glow {
+            box-shadow: 0 0 20px rgba(255, 46, 136, 0.3);
+        }
+        .premium-gradient {
+            background: linear-gradient(135deg, #ff4a90 0%, #aa0266 100%);
+        }
+        .safe-area-bottom {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        ::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-fixed": "#3e0022",
+                    "primary-container": "#ff4a90",
+                    "inverse-surface": "#dae2fd",
+                    "surface-container-lowest": "#060e20",
+                    "on-surface": "#dae2fd",
+                    "outline": "#aa8890",
+                    "tertiary-fixed": "#f0dbff",
+                    "outline-variant": "#5b3f46",
+                    "surface-bright": "#31394d",
+                    "on-tertiary": "#490080",
+                    "on-surface-variant": "#e3bdc5",
+                    "tertiary": "#ddb7ff",
+                    "error": "#ffb4ab",
+                    "primary-fixed-dim": "#ffb1c5",
+                    "surface-container-highest": "#2d3449",
+                    "tertiary-container": "#b76dff",
+                    "inverse-on-surface": "#283044",
+                    "on-primary-fixed": "#3f001b",
+                    "error-container": "#93000a",
+                    "secondary-fixed-dim": "#ffb0cd",
+                    "on-tertiary-fixed-variant": "#6900b3",
+                    "on-error": "#690005",
+                    "on-error-container": "#ffdad6",
+                    "secondary": "#ffb0cd",
+                    "on-primary-fixed-variant": "#8e0046",
+                    "on-tertiary-container": "#400071",
+                    "on-primary-container": "#590029",
+                    "on-secondary-container": "#ffbad3",
+                    "secondary-container": "#aa0266",
+                    "secondary-fixed": "#ffd9e4",
+                    "on-background": "#dae2fd",
+                    "surface-variant": "#2d3449",
+                    "primary-fixed": "#ffd9e1",
+                    "on-secondary": "#640039",
+                    "background": "#0b1326",
+                    "inverse-primary": "#ba005d",
+                    "on-secondary-fixed-variant": "#8c0053",
+                    "surface-container-low": "#131b2e",
+                    "on-tertiary-fixed": "#2c0051",
+                    "primary": "#ffb1c5",
+                    "surface-dim": "#0b1326",
+                    "on-primary": "#650030",
+                    "surface-container": "#171f33",
+                    "surface-container-high": "#222a3d",
+                    "surface-tint": "#ffb1c5",
+                    "tertiary-fixed-dim": "#ddb7ff",
+                    "surface": "#0b1326"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "stack-gap": "16px",
+                    "gutter": "16px",
+                    "container-padding": "24px",
+                    "section-gap": "40px",
+                    "base": "8px"
+            },
+            "fontFamily": {
+                    "display-lg": ["Plus Jakarta Sans"],
+                    "headline-lg": ["Plus Jakarta Sans"],
+                    "headline-md": ["Plus Jakarta Sans"],
+                    "body-lg": ["Plus Jakarta Sans"],
+                    "body-md": ["Plus Jakarta Sans"],
+                    "display-lg-mobile": ["Plus Jakarta Sans"],
+                    "label-sm": ["Plus Jakarta Sans"],
+                    "label-lg": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "display-lg-mobile": ["36px", {"lineHeight": "42px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                    "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background min-h-screen pb-32">
+<!-- Top App Bar -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-6 py-4 bg-surface/80 backdrop-blur-xl border-b border-white/10 shadow-sm">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary font-headline-md">arrow_back</span>
+<h1 class="font-headline-md text-headline-md-mobile text-on-surface">Account</h1>
+</div>
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full border-2 border-primary-container overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A professional studio portrait of a woman with a confident expression, soft dramatic lighting, against a dark minimalist background that matches a premium fintech luxury aesthetic. The image uses deep shadows and subtle highlights to create depth and a high-end feel." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAMySuQ8utPpoomas0d4JRAQKN7g7Av4qdzbWgQcmLEpRvqDOeSoHIfnAaGDOszBR_9q1oSG-LfapVwhtKaJp2YzfQ_AvMfQtLZ9Um0nFtj3fx0oJNnhHMOfPjFDW7e1yZPo7zXGoSARJiDoeXRBufnGYQyHt38W7FBDxToeGGUUPnVbVHcqs_nc7x4nTfgl6ibMImbnPNlqz11X9szQQtXOzU4de2XhJhtsG_kFO8ct-7nYtAwT62nARmJSY4ZSs27MOdrSHkBy78"/>
+</div>
+</div>
+</header>
+<main class="pt-24 px-6 space-y-8 max-w-lg mx-auto">
+<!-- Hero Profile Section -->
+<section class="flex flex-col items-center text-center space-y-4">
+<div class="relative">
+<div class="w-32 h-32 rounded-full border-4 border-primary-container p-1 pink-glow">
+<img class="w-full h-full rounded-full object-cover" data-alt="Close up high-fidelity photography of a modern luxury tech user, wearing sleek dark apparel, looking into the camera with a sense of security and confidence. The lighting is moody with pink neon accents reflecting on their skin, echoing a futuristic personal safety brand identity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC8Yw-2MqH-yugPqeDzlewN_arKVKh924-VS23vmrLnJCR6osi_kMP5kO5aKWLWuLikTLBJbTf32h7j68PcaMgtOZPVgc9w5igM3Of2NkCoq-b0J7UgC3vC7wNZXkpqo6W-tCItmbTF1Rt1VCXMPsZbzqq1AMkp82mgOmY0VMnhOVNHC-qPMQoPMa0Wr5z-MiKHzx-iCYAaAHKRTWlAuFjadQAfZPdN9-swnwyojiM7JEIJhlVee1wdidkQaMnKJ1Sc6_B48p-vtvI"/>
+</div>
+<div class="absolute -bottom-2 left-1/2 -translate-x-1/2 premium-gradient px-4 py-1 rounded-full shadow-lg">
+<span class="text-white font-label-lg text-label-sm uppercase tracking-widest flex items-center gap-1">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">verified</span>
+                        Premium
+                    </span>
+</div>
+</div>
+<div>
+<h2 class="font-headline-lg text-headline-lg-mobile text-on-surface">Alex Sterling</h2>
+<p class="font-body-md text-on-surface-variant">Safety Shield Active • v1.2.0</p>
+</div>
+</section>
+<!-- Stats Bento Grid -->
+<section class="grid grid-cols-2 gap-4">
+<div class="glass-card rounded-3xl p-6 flex flex-col justify-between h-32">
+<span class="material-symbols-outlined text-primary text-3xl">route</span>
+<div>
+<p class="font-display-lg-mobile text-primary leading-none">124</p>
+<p class="font-label-sm text-on-surface-variant uppercase tracking-tighter">Safe Trips</p>
+</div>
+</div>
+<div class="glass-card rounded-3xl p-6 flex flex-col justify-between h-32">
+<span class="material-symbols-outlined text-tertiary text-3xl">groups</span>
+<div>
+<p class="font-display-lg-mobile text-tertiary leading-none">8</p>
+<p class="font-label-sm text-on-surface-variant uppercase tracking-tighter">Trusted Contacts</p>
+</div>
+</div>
+</section>
+<!-- Subscription Status -->
+<section class="glass-card rounded-3xl p-6 flex items-center justify-between overflow-hidden relative">
+<div class="z-10">
+<h3 class="font-headline-md text-on-surface mb-1">Guardian Elite</h3>
+<p class="font-body-md text-on-surface-variant">Next billing: Oct 24, 2023</p>
+</div>
+<button class="z-10 bg-white/10 hover:bg-white/20 transition-colors px-4 py-2 rounded-xl font-label-lg text-on-surface">Manage</button>
+<div class="absolute -right-4 -top-4 opacity-10">
+<span class="material-symbols-outlined text-[120px]" style="font-variation-settings: 'FILL' 1;">shield_with_heart</span>
+</div>
+</section>
+<!-- Settings List -->
+<section class="space-y-2">
+<h4 class="font-label-lg text-on-surface-variant uppercase tracking-widest px-2 mb-4">Preferences</h4>
+<div class="glass-card rounded-3xl overflow-hidden divide-y divide-white/5">
+<!-- Guardian Mode -->
+<button class="w-full flex items-center justify-between p-5 hover:bg-white/5 transition-colors active:scale-[0.98]">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-2xl bg-secondary-container/30 flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">security</span>
+</div>
+<div class="text-left">
+<p class="font-body-lg text-on-surface font-semibold">Guardian Mode</p>
+<p class="font-label-sm text-on-surface-variant">AI-powered active monitoring</p>
+</div>
+</div>
+<div class="w-12 h-6 bg-primary-container rounded-full relative flex items-center px-1">
+<div class="w-4 h-4 bg-white rounded-full absolute right-1"></div>
+</div>
+</button>
+<!-- Emergency Prefs -->
+<button class="w-full flex items-center justify-between p-5 hover:bg-white/5 transition-colors active:scale-[0.98]">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-2xl bg-error-container/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-error" style="font-variation-settings: 'FILL' 1;">emergency</span>
+</div>
+<div class="text-left">
+<p class="font-body-lg text-on-surface font-semibold">Emergency Preferences</p>
+<p class="font-label-sm text-on-surface-variant">SOS triggers and contacts</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</button>
+<!-- Appearance -->
+<button class="w-full flex items-center justify-between p-5 hover:bg-white/5 transition-colors active:scale-[0.98]">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-2xl bg-tertiary-container/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary">palette</span>
+</div>
+<div class="text-left">
+<p class="font-body-lg text-on-surface font-semibold">Appearance</p>
+<p class="font-label-sm text-on-surface-variant">Dark mode, accent colors</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</button>
+<!-- Privacy & Permissions -->
+<button class="w-full flex items-center justify-between p-5 hover:bg-white/5 transition-colors active:scale-[0.98]">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface">lock</span>
+</div>
+<div class="text-left">
+<p class="font-body-lg text-on-surface font-semibold">Privacy &amp; Permissions</p>
+<p class="font-label-sm text-on-surface-variant">Location and data access</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</button>
+</div>
+</section>
+<!-- Danger Zone -->
+<section class="pb-10">
+<button class="w-full glass-card border-error/20 rounded-3xl p-5 flex items-center justify-center gap-2 text-error hover:bg-error/5 transition-colors">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-label-lg">Sign Out</span>
+</button>
+</section>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center px-4 pb-8 pt-3 bg-surface-container/60 backdrop-blur-2xl border-t border-white/5 shadow-[0px_-4px_24px_rgba(0,0,0,0.4)] rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined">map</span>
+<span class="font-label-sm text-label-sm">Map</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined">shield</span>
+<span class="font-label-sm text-label-sm">Guardian</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined">history</span>
+<span class="font-label-sm text-label-sm">Activity</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">person</span>
+<span class="font-label-sm text-label-sm">Profile</span>
+</a>
+</nav>
+<script>
+        // Micro-interaction: Profile picture soft pulse effect
+        const profileImage = document.querySelector('.pink-glow');
+        if (profileImage) {
+            setInterval(() => {
+                profileImage.style.boxShadow = '0 0 30px rgba(255, 46, 136, 0.5)';
+                setTimeout(() => {
+                    profileImage.style.boxShadow = '0 0 20px rgba(255, 46, 136, 0.3)';
+                }, 1000);
+            }, 2000);
+        }
+
+        // Handle simple switch toggle visual
+        const toggle = document.querySelector('.bg-primary-container');
+        toggle?.addEventListener('click', function() {
+            const circle = this.querySelector('div');
+            if (this.classList.contains('bg-primary-container')) {
+                this.classList.remove('bg-primary-container');
+                this.classList.add('bg-white/20');
+                circle.classList.remove('right-1');
+                circle.classList.add('left-1');
+            } else {
+                this.classList.remove('bg-white/20');
+                this.classList.add('bg-primary-container');
+                circle.classList.remove('left-1');
+                circle.classList.add('right-1');
+            }
+        });
+    </script>
+</body></html>

@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Guardian AI - Sign Up</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-background": "#dae2fd",
+                        "surface-container-high": "#222a3d",
+                        "primary-container": "#ff4a90",
+                        "secondary-fixed": "#ffd9e4",
+                        "tertiary-container": "#b76dff",
+                        "background": "#0b1326",
+                        "tertiary-fixed-dim": "#ddb7ff",
+                        "on-surface": "#dae2fd",
+                        "on-error": "#690005",
+                        "surface-container": "#171f33",
+                        "surface-container-highest": "#2d3449",
+                        "on-secondary-fixed-variant": "#8c0053",
+                        "surface-container-low": "#131b2e",
+                        "secondary-fixed-dim": "#ffb0cd",
+                        "on-tertiary-container": "#400071",
+                        "primary": "#ffb1c5",
+                        "on-surface-variant": "#e3bdc5",
+                        "surface-tint": "#ffb1c5",
+                        "secondary-container": "#aa0266",
+                        "secondary": "#ffb0cd",
+                        "on-secondary-container": "#ffbad3",
+                        "on-tertiary-fixed": "#2c0051",
+                        "outline": "#aa8890",
+                        "surface-container-lowest": "#060e20",
+                        "surface-variant": "#2d3449",
+                        "inverse-primary": "#ba005d",
+                        "surface-bright": "#31394d",
+                        "on-error-container": "#ffdad6",
+                        "on-tertiary": "#490080",
+                        "on-primary-fixed-variant": "#8e0046",
+                        "on-primary-fixed": "#3f001b",
+                        "inverse-on-surface": "#283044",
+                        "inverse-surface": "#dae2fd",
+                        "error": "#ffb4ab",
+                        "error-container": "#93000a",
+                        "tertiary": "#ddb7ff",
+                        "surface": "#0b1326",
+                        "outline-variant": "#5b3f46",
+                        "surface-dim": "#0b1326",
+                        "primary-fixed": "#ffd9e1",
+                        "on-secondary": "#640039",
+                        "on-primary": "#650030",
+                        "on-tertiary-fixed-variant": "#6900b3",
+                        "on-secondary-fixed": "#3e0022",
+                        "on-primary-container": "#590029",
+                        "tertiary-fixed": "#f0dbff",
+                        "primary-fixed-dim": "#ffb1c5"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-gap": "16px",
+                        "section-gap": "40px",
+                        "container-padding": "24px",
+                        "gutter": "16px",
+                        "base": "8px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "display-lg-mobile": ["Plus Jakarta Sans"],
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "label-lg": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "display-lg": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "display-lg-mobile": ["36px", {"lineHeight": "42px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                        "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #0b1326;
+            color: #dae2fd;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow-x: hidden;
+        }
+
+        .glass-card {
+            background: rgba(23, 31, 51, 0.4);
+            backdrop-filter: blur(20px);
+            border: 0.5px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .glass-input {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .glass-input:focus {
+            border-color: #ff2e88;
+            background: rgba(255, 46, 136, 0.05);
+            box-shadow: 0 0 15px rgba(255, 46, 136, 0.2);
+            outline: none;
+        }
+
+        .primary-gradient-btn {
+            background: linear-gradient(135deg, #ff2e88 0%, #a855f7 100%);
+            box-shadow: 0 8px 20px rgba(255, 46, 136, 0.3);
+            transition: transform 0.2s, opacity 0.2s;
+        }
+
+        .primary-gradient-btn:active {
+            transform: scale(0.96);
+        }
+
+        /* Subtle atmospheric glow */
+        .glow-bg {
+            position: fixed;
+            width: 600px;
+            height: 600px;
+            border-radius: 100%;
+            background: radial-gradient(circle, rgba(255, 46, 136, 0.08) 0%, transparent 70%);
+            z-index: -1;
+            filter: blur(60px);
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2d3449;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center selection:bg-primary-container selection:text-white">
+<div class="glow-bg top-[-200px] left-[-200px]"></div>
+<div class="glow-bg bottom-[-200px] right-[-200px]"></div>
+<!-- Main Content Container -->
+<main class="w-full max-w-lg px-container-padding pt-12 pb-24 flex flex-col items-center">
+<!-- Header Illustration Area -->
+<div class="w-full mb-8 relative group">
+<div class="absolute -inset-1 bg-gradient-to-r from-primary to-tertiary rounded-[32px] blur opacity-20 group-hover:opacity-30 transition duration-1000"></div>
+<div class="relative overflow-hidden rounded-[32px] glass-card aspect-[4/3] flex items-center justify-center">
+<img alt="Guardian Illustration" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCTWqHsJW8oTPxV71FiWY0j8qwMKy3vWKxKs1KeYKGF_w2XT_1RUDN3TQlvhUiEBqTFu6f5n2OQkiUBZ86OCJv_kjgk_YRdIEhNqyyEh8NYoqW_uFgFIf4tqTzqwPU93wTGr9JFvn0mNCc4TxXrEaXajzrM_6A0CNpnmARcHGM66A2nJz_Baq8_tph2ShSndPwk_8nNCpxN91QtuyTQiv-2CrKEeoY71bOVLP3t7nEnoifG7hFQVA6aLU4AprMiH8L-G4-wlUa1EAg"/>
+</div>
+</div>
+<!-- Typography Header -->
+<header class="text-center mb-section-gap w-full">
+<h1 class="font-display-lg-mobile text-display-lg-mobile text-on-surface mb-2 tracking-tight">
+                Create Your Guardian
+            </h1>
+<p class="font-body-md text-on-surface-variant px-8">
+                Join thousands of users building safer journeys every day.
+            </p>
+</header>
+<!-- Sign Up Form -->
+<form class="w-full space-y-gutter">
+<!-- Full Name -->
+<div class="space-y-2">
+<label class="font-label-lg text-label-lg text-on-surface-variant ml-1">Full Name</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/50">person</span>
+<input class="w-full h-14 pl-12 pr-4 glass-input rounded-xl text-on-surface placeholder:text-on-surface-variant/30 font-body-md" placeholder="John Doe" type="text"/>
+</div>
+</div>
+<!-- Email -->
+<div class="space-y-2">
+<label class="font-label-lg text-label-lg text-on-surface-variant ml-1">Email Address</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/50">mail</span>
+<input class="w-full h-14 pl-12 pr-4 glass-input rounded-xl text-on-surface placeholder:text-on-surface-variant/30 font-body-md" placeholder="john@example.com" type="email"/>
+</div>
+</div>
+<!-- Phone Number -->
+<div class="space-y-2">
+<label class="font-label-lg text-label-lg text-on-surface-variant ml-1">Phone Number</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/50">call</span>
+<input class="w-full h-14 pl-12 pr-4 glass-input rounded-xl text-on-surface placeholder:text-on-surface-variant/30 font-body-md" placeholder="+1 (555) 000-0000" type="tel"/>
+</div>
+</div>
+<!-- Passwords Row -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<div class="space-y-2">
+<label class="font-label-lg text-label-lg text-on-surface-variant ml-1">Password</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/50">lock</span>
+<input class="w-full h-14 pl-12 pr-4 glass-input rounded-xl text-on-surface placeholder:text-on-surface-variant/30 font-body-md" placeholder="••••••••" type="password"/>
+</div>
+</div>
+<div class="space-y-2">
+<label class="font-label-lg text-label-lg text-on-surface-variant ml-1">Confirm</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/50">verified_user</span>
+<input class="w-full h-14 pl-12 pr-4 glass-input rounded-xl text-on-surface placeholder:text-on-surface-variant/30 font-body-md" placeholder="••••••••" type="password"/>
+</div>
+</div>
+</div>
+<!-- Terms & Privacy -->
+<div class="flex items-start gap-3 pt-2">
+<div class="relative flex items-center h-5">
+<input class="w-5 h-5 rounded border-white/10 bg-white/5 text-primary-container focus:ring-primary focus:ring-offset-background transition-all cursor-pointer" id="terms" type="checkbox"/>
+</div>
+<label class="font-label-sm text-label-sm text-on-surface-variant cursor-pointer leading-tight" for="terms">
+                    I agree to the <a class="text-primary hover:underline transition-all" href="#">Privacy Policy</a> and <a class="text-primary hover:underline transition-all" href="#">Terms of Service</a>.
+                </label>
+</div>
+<!-- Submit Button -->
+<button class="w-full h-16 mt-4 rounded-full primary-gradient-btn flex items-center justify-center font-headline-md text-headline-md text-white tracking-wide" type="submit">
+                Create Account
+            </button>
+</form>
+<!-- Footer Link -->
+<footer class="mt-8">
+<p class="font-body-md text-on-surface-variant">
+                Already have an account? 
+                <a class="text-primary font-semibold ml-1 hover:brightness-125 transition-all" href="#">Sign In</a>
+</p>
+</footer>
+</main>
+<!-- Background Atmospheric Particles (Simplified JS animation) -->
+<canvas class="fixed inset-0 pointer-events-none z-[-1] opacity-40" id="atmosphere"></canvas>
+<script>
+        // Simple ambient particle background
+        const canvas = document.getElementById('atmosphere');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function init() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            particles = [];
+            for (let i = 0; i < 30; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 2 + 1,
+                    speedY: Math.random() * 0.3 + 0.1,
+                    opacity: Math.random() * 0.5
+                });
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.y -= p.speedY;
+                if (p.y < -10) p.y = canvas.height + 10;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 46, 136, ${p.opacity})`;
+                ctx.fill();
+            });
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('resize', init);
+        init();
+        animate();
+    </script>
+</body></html>

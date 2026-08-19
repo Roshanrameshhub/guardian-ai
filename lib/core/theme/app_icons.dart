@@ -1,0 +1,50 @@
+import 'package:flutter/material.dart';
+
+/// Centralized Material icon references used across the app.
+abstract final class AppIcons {
+  static const IconData home = Icons.home_outlined;
+  static const IconData homeFilled = Icons.home_rounded;
+  static const IconData map = Icons.map_outlined;
+  static const IconData mapFilled = Icons.map_rounded;
+  static const IconData shield = Icons.shield_outlined;
+  static const IconData shieldFilled = Icons.shield_rounded;
+  static const IconData activity = Icons.history_rounded;
+  static const IconData profile = Icons.person_outline_rounded;
+  static const IconData profileFilled = Icons.person_rounded;
+  static const IconData notifications = Icons.notifications_outlined;
+  static const IconData email = Icons.mail_outline_rounded;
+  static const IconData lock = Icons.lock_outline_rounded;
+  static const IconData visibility = Icons.visibility_outlined;
+  static const IconData visibilityOff = Icons.visibility_off_outlined;
+  static const IconData walk = Icons.directions_walk_rounded;
+  static const IconData phone = Icons.phone_outlined;
+  static const IconData message = Icons.chat_bubble_outline_rounded;
+  static const IconData sos = Icons.emergency_rounded;
+  static const IconData add = Icons.add_rounded;
+  static const IconData edit = Icons.edit_outlined;
+  static const IconData back = Icons.arrow_back_ios_new_rounded;
+  static const IconData mic = Icons.mic_outlined;
+  static const IconData flashlight = Icons.flashlight_on_outlined;
+  static const IconData audio = Icons.graphic_eq_rounded;
+  static const IconData location = Icons.near_me_rounded;
+  static const IconData metro = Icons.train_outlined;
+  static const IconData hospital = Icons.local_hospital_outlined;
+  static const IconData police = Icons.local_police_outlined;
+  static const IconData weather = Icons.wb_cloudy_outlined;
+  static const IconData brain = Icons.psychology_outlined;
+  static const IconData check = Icons.check_rounded;
+  static const IconData logout = Icons.logout_rounded;
+  static const IconData share = Icons.share_outlined;
+  static const IconData search = Icons.search_rounded;
+  static const IconData moon = Icons.dark_mode_outlined;
+  static const IconData chevronRight = Icons.chevron_right_rounded;
+  static const IconData person = Icons.person_outline_rounded;
+  static const IconData verified = Icons.verified_rounded;
+  static const IconData palette = Icons.palette_outlined;
+  static const IconData warning = Icons.warning_amber_rounded;
+  static const IconData star = Icons.star_outline_rounded;
+  static const IconData ribbon = Icons.military_tech_outlined;
+  static const IconData clock = Icons.access_time_rounded;
+  static const IconData arrowForward = Icons.arrow_forward_rounded;
+  static const IconData userPlus = Icons.person_add_alt_1_rounded;
+}

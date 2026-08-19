@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Guardian AI | Home Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 0.5px solid rgba(255, 255, 255, 0.1);
+        }
+        .sos-glow {
+            box-shadow: 0 0 30px rgba(255, 46, 136, 0.4), 0 0 60px rgba(255, 46, 136, 0.2);
+        }
+        .bg-mesh {
+            background: radial-gradient(circle at 0% 0%, rgba(255, 46, 136, 0.15) 0%, transparent 40%),
+                        radial-gradient(circle at 100% 100%, rgba(168, 85, 247, 0.15) 0%, transparent 40%);
+        }
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 20px rgba(255, 46, 136, 0.4); }
+            50% { box-shadow: 0 0 40px rgba(255, 46, 136, 0.6); }
+            100% { box-shadow: 0 0 20px rgba(255, 46, 136, 0.4); }
+        }
+        .animate-pulse-glow {
+            animation: pulse-glow 3s infinite ease-in-out;
+        }
+        ::-webkit-scrollbar { display: none; }
+    </style>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-fixed": "#3e0022",
+                    "primary-container": "#ff4a90",
+                    "inverse-surface": "#dae2fd",
+                    "surface-container-lowest": "#060e20",
+                    "on-surface": "#dae2fd",
+                    "outline": "#aa8890",
+                    "tertiary-fixed": "#f0dbff",
+                    "outline-variant": "#5b3f46",
+                    "surface-bright": "#31394d",
+                    "on-tertiary": "#490080",
+                    "on-surface-variant": "#e3bdc5",
+                    "tertiary": "#ddb7ff",
+                    "error": "#ffb4ab",
+                    "primary-fixed-dim": "#ffb1c5",
+                    "surface-container-highest": "#2d3449",
+                    "tertiary-container": "#b76dff",
+                    "inverse-on-surface": "#283044",
+                    "on-primary-fixed": "#3f001b",
+                    "error-container": "#93000a",
+                    "secondary-fixed-dim": "#ffb0cd",
+                    "on-tertiary-fixed-variant": "#6900b3",
+                    "on-error": "#690005",
+                    "on-error-container": "#ffdad6",
+                    "secondary": "#ffb0cd",
+                    "on-primary-fixed-variant": "#8e0046",
+                    "on-tertiary-container": "#400071",
+                    "on-primary-container": "#590029",
+                    "on-secondary-container": "#ffbad3",
+                    "secondary-container": "#aa0266",
+                    "secondary-fixed": "#ffd9e4",
+                    "on-background": "#dae2fd",
+                    "surface-variant": "#2d3449",
+                    "primary-fixed": "#ffd9e1",
+                    "on-secondary": "#640039",
+                    "background": "#0b1326",
+                    "inverse-primary": "#ba005d",
+                    "on-secondary-fixed-variant": "#8c0053",
+                    "surface-container-low": "#131b2e",
+                    "on-tertiary-fixed": "#2c0051",
+                    "primary": "#ffb1c5",
+                    "surface-dim": "#0b1326",
+                    "on-primary": "#650030",
+                    "surface-container": "#171f33",
+                    "surface-container-high": "#222a3d",
+                    "surface-tint": "#ffb1c5",
+                    "tertiary-fixed-dim": "#ddb7ff",
+                    "surface": "#0b1326"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "12px",
+                    "2xl": "24px",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "stack-gap": "16px",
+                    "gutter": "16px",
+                    "container-padding": "24px",
+                    "section-gap": "40px",
+                    "base": "8px"
+            },
+            "fontFamily": {
+                    "display-lg": ["Plus Jakarta Sans"],
+                    "headline-lg": ["Plus Jakarta Sans"],
+                    "headline-md": ["Plus Jakarta Sans"],
+                    "body-lg": ["Plus Jakarta Sans"],
+                    "body-md": ["Plus Jakarta Sans"],
+                    "display-lg-mobile": ["Plus Jakarta Sans"],
+                    "label-sm": ["Plus Jakarta Sans"],
+                    "label-lg": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "display-lg-mobile": ["36px", {"lineHeight": "42px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                    "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md selection:bg-primary/30 min-h-screen pb-32 overflow-x-hidden">
+<!-- Top App Bar -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-gutter py-4 bg-surface/80 dark:bg-surface/80 backdrop-blur-xl border-b border-white/10 shadow-sm">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden border border-primary/20 bg-surface-container">
+<img alt="User Profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAGlOfAOGKPE-AJ_Setfl2qcO96dRHnFwbJokj2MttuApAHz3ZKbnTlhv6JNbQb-OahWHTB6WFg33wm9MEmsrV8tTSkES52EI1Nr_d6Rc-U5RGXY7eQFxfA6RT41e8XPtTPFUKqJzzuEM0PcI4vSf_vF4vSCX6lBkn0nMQ7QsFTrphCa3bjhGyOAbwXcRuACvuyQuHYcJj3qCL-KOYMMIfLI69ZFhqyUnw6RyUocVJ7BlLiKDPURpOMmnk1IQAwBzXjN7UWibgaa1c"/>
+</div>
+<div>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Welcome back,</p>
+<h1 class="font-headline-md text-headline-md text-primary leading-tight">Julian</h1>
+</div>
+</div>
+<button class="w-10 h-10 flex items-center justify-center rounded-full glass-card text-on-surface-variant hover:opacity-80 transition-opacity active:scale-95">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+</header>
+<main class="pt-24 px-gutter flex flex-col gap-6 bg-mesh">
+<!-- Safety Score & SOS Section -->
+<section class="flex flex-col items-center py-6">
+<div class="relative flex items-center justify-center w-64 h-64">
+<svg class="w-full h-full transform -rotate-90">
+<circle class="text-white/5" cx="128" cy="128" fill="transparent" r="110" stroke="currentColor" stroke-width="8"></circle>
+<circle class="drop-shadow-[0_0_15px_rgba(255,46,136,0.3)]" cx="128" cy="128" fill="transparent" r="110" stroke="url(#scoreGradient)" stroke-dasharray="691" stroke-dashoffset="120" stroke-linecap="round" stroke-width="12"></circle>
+<defs>
+<lineargradient id="scoreGradient" x1="0%" x2="100%" y1="0%">
+<stop offset="0%" style="stop-color:#FF2E88"></stop>
+<stop offset="100%" style="stop-color:#A855F7"></stop>
+</lineargradient>
+</defs>
+</svg>
+<div class="absolute flex flex-col items-center text-center">
+<span class="font-display-lg-mobile text-display-lg-mobile text-on-surface leading-none">94</span>
+<span class="font-label-lg text-label-lg text-primary tracking-widest uppercase mt-1">Safety Score</span>
+<div class="mt-2 px-3 py-1 bg-primary/10 border border-primary/20 rounded-full flex items-center gap-1">
+<div class="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+<span class="text-[10px] font-bold text-primary">SECURE</span>
+</div>
+</div>
+</div>
+<div class="mt-8 glass-card w-full p-4 rounded-2xl flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-primary-container/20 flex items-center justify-center text-primary-container">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">shield</span>
+</div>
+<div>
+<h3 class="font-label-lg text-label-lg text-on-surface">Guardian Mode</h3>
+<p class="text-[11px] text-on-surface-variant">AI-Enhanced Monitoring Active</p>
+</div>
+</div>
+<button class="w-12 h-6 rounded-full bg-primary/20 relative transition-colors duration-300" id="guardianToggle">
+<div class="absolute left-1 top-1 w-4 h-4 rounded-full bg-primary transform translate-x-6 transition-transform duration-300"></div>
+</button>
+</div>
+</section>
+<!-- Primary Call to Action -->
+<button class="w-full bg-primary-container text-on-primary-container py-4 rounded-2xl font-headline-md text-headline-md flex items-center justify-center gap-3 shadow-lg active:scale-95 transition-transform">
+<span class="material-symbols-outlined">directions_walk</span>
+            Start Safe Walk
+        </button>
+<!-- Recent Journey -->
+<section class="glass-card p-4 rounded-2xl">
+<div class="flex justify-between items-center mb-3">
+<h3 class="font-label-lg text-label-lg text-on-surface">Recent Journey</h3>
+<span class="text-[10px] text-outline">Yesterday</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex flex-col items-center">
+<div class="w-2 h-2 rounded-full bg-primary"></div>
+<div class="w-0.5 h-6 border-l border-dashed border-primary/40 my-1"></div>
+<div class="w-2 h-2 rounded-full border border-primary"></div>
+</div>
+<div class="flex-1">
+<p class="text-xs font-semibold text-on-surface truncate">Trip from Phoenix Marketcity to Adyar</p>
+<p class="text-[10px] text-on-surface-variant">Completed safely with Guardian AI</p>
+</div>
+<span class="material-symbols-outlined text-primary-container">verified</span>
+</div>
+</section>
+<!-- Bento Grid Features & Nearby -->
+<section class="grid grid-cols-2 gap-4">
+<!-- Weather Card -->
+<div class="glass-card p-4 rounded-2xl flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<span class="material-symbols-outlined text-tertiary">partly_cloudy_day</span>
+<span class="text-lg font-bold">31°</span>
+</div>
+<div>
+<h4 class="text-xs font-semibold text-on-surface-variant">Chennai, TN</h4>
+<p class="text-[10px] text-outline opacity-60">Humid • Visibility 8km</p>
+</div>
+</div>
+<!-- AI Status Card -->
+<div class="glass-card p-4 rounded-2xl flex flex-col gap-2 border-primary/10">
+<div class="flex items-center justify-between">
+<span class="material-symbols-outlined text-primary-container">psychology</span>
+<div class="flex gap-0.5">
+<div class="w-1 h-1 rounded-full bg-primary-container"></div>
+<div class="w-1 h-1 rounded-full bg-primary-container"></div>
+<div class="w-1 h-1 rounded-full bg-primary-container animate-bounce"></div>
+</div>
+</div>
+<div>
+<h4 class="text-xs font-semibold text-on-surface-variant">Guardian AI</h4>
+<p class="text-[10px] text-primary-container/80">Scanning surroundings...</p>
+</div>
+</div>
+<!-- Nearby Landmarks -->
+<div class="col-span-2 glass-card p-5 rounded-2xl flex flex-col gap-4">
+<h3 class="font-label-lg text-label-lg text-on-surface-variant border-b border-white/5 pb-2">Nearby Services</h3>
+<div class="grid grid-cols-1 gap-3">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-tertiary/10 flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-sm">train</span>
+</div>
+<div class="flex-1">
+<p class="text-xs font-semibold">Nearest Metro</p>
+<p class="text-[10px] text-outline">Thousand Lights</p>
+</div>
+<span class="text-[10px] text-tertiary">0.8 km</span>
+</div>
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-error/10 flex items-center justify-center text-error">
+<span class="material-symbols-outlined text-sm">medical_services</span>
+</div>
+<div class="flex-1">
+<p class="text-xs font-semibold">Nearby Hospital</p>
+<p class="text-[10px] text-outline">Apollo Greams Road</p>
+</div>
+<span class="text-[10px] text-error">1.2 km</span>
+</div>
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-sm">local_police</span>
+</div>
+<div class="flex-1">
+<p class="text-xs font-semibold">Nearby Police</p>
+<p class="text-[10px] text-outline">T3 Egmore PS</p>
+</div>
+<span class="text-[10px] text-primary">0.5 km</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Quick Actions -->
+<section>
+<h3 class="font-label-lg text-label-lg text-on-surface-variant mb-4 ml-1">Quick Actions</h3>
+<div class="grid grid-cols-2 gap-4">
+<button class="flex items-center gap-3 p-4 glass-card rounded-2xl hover:bg-white/5 transition-colors active:scale-95">
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">call</span>
+</div>
+<span class="font-label-lg text-label-lg">Fake Call</span>
+</button>
+<button class="flex items-center gap-3 p-4 glass-card rounded-2xl hover:bg-white/5 transition-colors active:scale-95">
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">chat_bubble</span>
+</div>
+<span class="font-label-lg text-label-lg">Fake Text</span>
+</button>
+</div>
+</section>
+<!-- Trusted Contacts -->
+<section class="pb-8">
+<div class="flex justify-between items-center mb-4 px-1">
+<h3 class="font-label-lg text-label-lg text-on-surface-variant">Trusted Contacts</h3>
+<button class="text-primary text-xs font-bold">Edit</button>
+</div>
+<div class="flex gap-4 overflow-x-auto pb-4 snap-x no-scrollbar">
+<div class="flex-shrink-0 snap-start flex flex-col items-center gap-2">
+<div class="relative">
+<div class="w-14 h-14 rounded-full p-0.5 border-2 border-primary">
+<div class="w-full h-full rounded-full overflow-hidden bg-surface-container">
+<img alt="Contact Mom" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAkLecyOclgFUVOPas98BPw_YiN1Bvq90_rQ4dsJ3v-tRlxyL4ccFBCJQhk6Gd6_VA_gSw-4L40-nqdNNxSEJdK0h1KmwYcCTd2E1ChHG6nzAfO-pg2SRMWKHGOf_Jxl3RXg4qWRNcPH0vyQKzr0VzGiLSWB5EH7kvBC9jcTlgG7NSeBokmEDYIGURUCBh3BPVTMH0XNOMz53JXLXWShflfivdLU1qgGVQST_PVjtOMQv6EQgVovU8xNwrTKGygjfGKMhT_AoDxZ7M"/>
+</div>
+</div>
+<div class="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-background rounded-full"></div>
+</div>
+<span class="text-[11px] font-medium text-on-surface">Mom</span>
+</div>
+<div class="flex-shrink-0 snap-start flex flex-col items-center gap-2">
+<div class="relative">
+<div class="w-14 h-14 rounded-full p-0.5 border border-white/10">
+<div class="w-full h-full rounded-full overflow-hidden bg-surface-container">
+<img alt="Contact Alex" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAvP9kBPLQna9ziccJUSJFajLiEZmHzAiITdfwk9k5VlYx-7-bmwFHj5AAUbIx3NQwC-WjmLlSDplHIcuunZa0vf_0iulFU_7rAlP4rBN4hWljJlAQxNFADIouE7_JZHCMtI-EEJz8rfim1YT_KxsJXzRz-uoUKPxgRuvDNf2TvZYOeB44xizEU-mBhq-62UoRutl2m__s3m8-2_mg31hRTp65xXISt4G-eLP4HXnRBFNBL4V1oRJTfNmII0PXYAfUMXW2rd2F857I"/>
+</div>
+</div>
+<div class="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-background rounded-full"></div>
+</div>
+<span class="text-[11px] font-medium text-on-surface">Alex</span>
+</div>
+<div class="flex-shrink-0 snap-start flex flex-col items-center gap-2">
+<div class="w-14 h-14 rounded-full border border-white/10 flex items-center justify-center bg-surface-container-high text-on-surface-variant">
+<span class="material-symbols-outlined">add</span>
+</div>
+<span class="text-[11px] font-medium text-on-surface-variant">Add</span>
+</div>
+</div>
+</section>
+</main>
+<!-- Floating SOS Button -->
+<button class="fixed bottom-28 right-6 w-20 h-20 bg-primary-container text-on-primary-container rounded-full flex flex-col items-center justify-center sos-glow animate-pulse-glow z-[55] active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-4xl" style="font-variation-settings: 'FILL' 1;">emergency</span>
+<span class="text-[10px] font-extrabold uppercase tracking-widest mt-1">SOS</span>
+</button>
+<!-- Navigation Bar -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center px-4 pb-8 pt-3 bg-surface-container/60 dark:bg-surface-container/60 backdrop-blur-2xl border-t border-white/5 shadow-[0px_-4px_24px_rgba(0,0,0,0.4)] rounded-t-2xl">
+<div class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined">map</span>
+<span class="font-label-sm text-label-sm">Map</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined">shield</span>
+<span class="font-label-sm text-label-sm">Guardian</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined">history</span>
+<span class="font-label-sm text-label-sm">Activity</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined">person</span>
+<span class="font-label-sm text-label-sm">Profile</span>
+</div>
+</nav>
+<script>
+        const toggleBtn = document.getElementById('guardianToggle');
+        let isActive = true;
+        
+        toggleBtn.addEventListener('click', () => {
+            isActive = !isActive;
+            const indicator = toggleBtn.querySelector('div');
+            if(isActive) {
+                indicator.classList.remove('translate-x-0');
+                indicator.classList.add('translate-x-6');
+                toggleBtn.classList.remove('bg-white/10');
+                toggleBtn.classList.add('bg-primary/20');
+            } else {
+                indicator.classList.remove('translate-x-6');
+                indicator.classList.add('translate-x-0');
+                toggleBtn.classList.remove('bg-primary/20');
+                toggleBtn.classList.add('bg-white/10');
+            }
+        });
+
+        document.querySelectorAll('.glass-card, button').forEach(el => {
+            el.addEventListener('touchstart', () => {
+                el.style.transform = el.tagName === 'BUTTON' ? 'scale(0.95)' : 'scale(0.98)';
+            });
+            el.addEventListener('touchend', () => {
+                el.style.transform = 'scale(1)';
+            });
+        });
+    </script>
+</body></html>
