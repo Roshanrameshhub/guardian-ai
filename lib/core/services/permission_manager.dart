@@ -61,20 +61,59 @@ class SafetyPermissionManager {
     );
   }
 
+  /// Proactively prompt for missing safety permissions upon entering the app.
+  Future<SafetyPermissionsStatus> requestStartupPermissions() async {
+    DevLog.log('PERMISSIONS', '[STARTUP] Checking and requesting essential safety permissions...');
+
+    // 1. Location permission
+    try {
+      var locStatus = await Geolocator.checkPermission();
+      if (locStatus == LocationPermission.denied) {
+        DevLog.log('PERMISSIONS', '[STARTUP] Requesting Location permission...');
+        locStatus = await Geolocator.requestPermission();
+      }
+      DevLog.log('PERMISSIONS', '[STARTUP] Location status = $locStatus');
+    } catch (e) {
+      DevLog.log('PERMISSIONS', '[STARTUP] Error checking location permission: $e');
+    }
+
+    // 2. Microphone permission (Voice Distress)
+    try {
+      final micStatus = await Permission.microphone.status;
+      if (!micStatus.isGranted) {
+        DevLog.log('PERMISSIONS', '[STARTUP] Requesting Microphone permission...');
+        await Permission.microphone.request();
+      }
+    } catch (e) {
+      DevLog.log('PERMISSIONS', '[STARTUP] Error checking microphone permission: $e');
+    }
+
+    // 3. Notification permission (Foreground alerts & background updates)
+    try {
+      final notifStatus = await Permission.notification.status;
+      if (!notifStatus.isGranted) {
+        DevLog.log('PERMISSIONS', '[STARTUP] Requesting Notification permission...');
+        await Permission.notification.request();
+      }
+    } catch (e) {
+      DevLog.log('PERMISSIONS', '[STARTUP] Error checking notification permission: $e');
+    }
+
+    // 4. Activity Recognition (Sensor kinematics)
+    try {
+      final activityStatus = await Permission.activityRecognition.status;
+      if (!activityStatus.isGranted) {
+        await Permission.activityRecognition.request();
+      }
+    } catch (_) {}
+
+    final finalStatus = await checkPermissions();
+    DevLog.log('PERMISSIONS', '[STARTUP] Result: Location=${finalStatus.locationGranted}, Mic=${finalStatus.microphoneGranted}, Notif=${finalStatus.notificationGranted}');
+    return finalStatus;
+  }
+
   /// Request all necessary permissions with user context.
   Future<SafetyPermissionsStatus> requestAllPermissions() async {
-    DevLog.log('PERMISSIONS', 'Requesting contextual safety permissions...');
-
-    try {
-      await Geolocator.requestPermission();
-    } catch (_) {}
-
-    try {
-      await Permission.microphone.request();
-      await Permission.notification.request();
-      await Permission.activityRecognition.request();
-    } catch (_) {}
-
-    return checkPermissions();
+    return requestStartupPermissions();
   }
 }

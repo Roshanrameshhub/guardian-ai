@@ -261,7 +261,7 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
                   const Divider(color: AppColors.glassBorder),
                   _StatusRow(
                     label: 'Distress Listener State',
-                    value: voiceService.isListening ? 'LISTENING (Active)' : 'IDLE (Guardian Standby)',
+                    value: voiceService.state.name.toUpperCase(),
                     isOk: voiceService.isListening,
                   ),
                   const Divider(color: AppColors.glassBorder),
@@ -412,6 +412,48 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
               runSpacing: 8,
               children: [
                 _TestButton(
+                  label: 'TEST VOICE DISTRESS',
+                  icon: Icons.record_voice_over,
+                  color: AppColors.error,
+                  onPressed: () {
+                    voiceService.simulateVoiceTrigger('HELP');
+                    engine.logEvent(
+                      type: SafetyEventType.voiceDistress,
+                      severity: SafetyEventSeverity.critical,
+                      title: '⚠ POSSIBLE DISTRESS',
+                      message: '"HELP" detected (TEST EVENT).',
+                    );
+                    showSafetyConfirmationDialog(
+                      context: context,
+                      ref: ref,
+                      title: '⚠ POSSIBLE DISTRESS',
+                      subtitle: '"Help" detected (TEST EVENT)\nARE YOU IN DANGER?',
+                      triggerSource: 'test_voice_distress',
+                    );
+                  },
+                ),
+                _TestButton(
+                  label: 'TEST FALL',
+                  icon: Icons.personal_injury_outlined,
+                  color: AppColors.error,
+                  onPressed: () {
+                    sensorService.simulateFall();
+                    engine.logEvent(
+                      type: SafetyEventType.fallDetected,
+                      severity: SafetyEventSeverity.critical,
+                      title: '⚠ POSSIBLE FALL DETECTED',
+                      message: 'Fall anomaly simulated for verification (TEST EVENT).',
+                    );
+                    showSafetyConfirmationDialog(
+                      context: context,
+                      ref: ref,
+                      title: '⚠ POSSIBLE FALL DETECTED',
+                      subtitle: 'Fall detected (TEST EVENT)\nAre you in danger?',
+                      triggerSource: 'test_fall',
+                    );
+                  },
+                ),
+                _TestButton(
                   label: 'TEST SHAKE PIPELINE',
                   icon: Icons.vibration,
                   color: AppColors.warning,
@@ -420,57 +462,36 @@ class _DiagnosticsScreenState extends ConsumerState<DiagnosticsScreen> {
                     engine.logEvent(
                       type: SafetyEventType.shakeDetected,
                       severity: SafetyEventSeverity.warning,
-                      title: '⚠ POSSIBLE DANGER',
-                      message: 'Physical shake / movement detected.',
+                      title: '⚠ UNUSUAL MOVEMENT DETECTED',
+                      message: 'Physical shake / movement detected (TEST EVENT).',
                     );
                     showSafetyConfirmationDialog(
                       context: context,
                       ref: ref,
-                      title: '⚠ POSSIBLE DANGER',
-                      subtitle: 'Sudden shake/movement anomaly detected.\nAre you in danger?',
-                      triggerSource: 'sensor_shake_test',
+                      title: '⚠ UNUSUAL MOVEMENT DETECTED',
+                      subtitle: 'Sudden shake/movement anomaly detected (TEST EVENT).\nAre you in danger?',
+                      triggerSource: 'test_sensor_shake',
                     );
                   },
                 ),
                 _TestButton(
-                  label: 'TEST PHONE DROP / FALL',
+                  label: 'TEST PHONE DROP',
                   icon: Icons.arrow_downward,
-                  color: AppColors.error,
+                  color: AppColors.warning,
                   onPressed: () {
                     sensorService.simulatePhoneDrop();
                     engine.logEvent(
                       type: SafetyEventType.phoneDrop,
-                      severity: SafetyEventSeverity.critical,
-                      title: '⚠ POSSIBLE DANGER',
-                      message: 'High acceleration fall peak (>24 m/s²) recorded.',
+                      severity: SafetyEventSeverity.warning,
+                      title: '⚠ POSSIBLE DROP DETECTED',
+                      message: 'Freefall impact peak recorded (TEST EVENT).',
                     );
                     showSafetyConfirmationDialog(
                       context: context,
                       ref: ref,
-                      title: '⚠ POSSIBLE DANGER',
-                      subtitle: 'Fall/impact anomaly detected.\nAre you in danger?',
-                      triggerSource: 'sensor_fall_test',
-                    );
-                  },
-                ),
-                _TestButton(
-                  label: 'TEST VOICE "HELP" TRIGGER',
-                  icon: Icons.record_voice_over,
-                  color: AppColors.error,
-                  onPressed: () {
-                    voiceService.simulateVoiceTrigger('HELP ME EMERGENCY');
-                    engine.logEvent(
-                      type: SafetyEventType.loudNoiseDetected,
-                      severity: SafetyEventSeverity.critical,
-                      title: '⚠ POSSIBLE DISTRESS',
-                      message: '"HELP" distress phrase recognized.',
-                    );
-                    showSafetyConfirmationDialog(
-                      context: context,
-                      ref: ref,
-                      title: '⚠ POSSIBLE DISTRESS',
-                      subtitle: '"HELP" detected.\nAre you in danger?',
-                      triggerSource: 'voice_distress_test',
+                      title: '⚠ POSSIBLE DROP DETECTED',
+                      subtitle: 'Drop impact detected (TEST EVENT).\nAre you in danger?',
+                      triggerSource: 'test_sensor_drop',
                     );
                   },
                 ),

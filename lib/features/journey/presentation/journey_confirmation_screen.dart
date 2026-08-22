@@ -52,13 +52,24 @@ class _JourneyConfirmationScreenState
   Future<void> _handleStartJourney() async {
     setState(() => _isStarting = true);
     try {
+      double realOriginLat = widget.originLat;
+      double realOriginLng = widget.originLng;
+
+      try {
+        final loc = await ref.read(locationServiceProvider).getCurrentPosition(
+          timeout: const Duration(seconds: 4),
+        );
+        realOriginLat = loc.latitude;
+        realOriginLng = loc.longitude;
+      } catch (_) {}
+
       final journeyRepo = ref.read(journeyRepositoryProvider);
       final journey = await journeyRepo.startJourney(
         StartJourneyRequest(
           origin: 'Current Location',
           destination: widget.destinationName,
-          originLat: widget.originLat,
-          originLng: widget.originLng,
+          originLat: realOriginLat,
+          originLng: realOriginLng,
           destLat: widget.destLat,
           destLng: widget.destLng,
         ),

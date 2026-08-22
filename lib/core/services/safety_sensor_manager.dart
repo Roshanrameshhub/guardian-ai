@@ -167,7 +167,7 @@ class SafetySensorManager {
 
   StreamSubscription<Position>? _gpsSub;
   StreamSubscription<SensorReading>? _sensorSub;
-  StreamSubscription<String>? _voiceSub;
+  StreamSubscription<dynamic>? _voiceSub;
 
   final StreamController<SafetySensorSnapshot> _snapshotController =
       StreamController<SafetySensorSnapshot>.broadcast();
@@ -405,13 +405,16 @@ class SafetySensorManager {
     _currentSnapshot = _currentSnapshot.copyWith(
       voice: SensorTelemetry(
         name: 'VOICE',
-        status: hasMic ? (_voiceService.isListening ? SensorStatus.active : SensorStatus.inactive) : SensorStatus.permissionRequired,
+        status: hasMic
+            ? (_voiceService.isListening ? SensorStatus.active : SensorStatus.inactive)
+            : SensorStatus.permissionRequired,
         permission: hasMic ? 'GRANTED' : 'PERMISSION_REQUIRED',
         availability: _voiceService.isSttAvailable,
         lastUpdate: now,
         rawValues: {
           'listening': _voiceService.isListening,
           'transcript': _voiceService.latestTranscript,
+          'state': _voiceService.state.name,
         },
         filteredValues: {
           'distressCandidate': false,
@@ -423,20 +426,21 @@ class SafetySensorManager {
     );
 
     _voiceSub?.cancel();
-    _voiceSub = _voiceService.emergencyTriggerStream.listen((phrase) {
+    _voiceSub = _voiceService.stateStream.listen((state) {
+      final isListening = state == VoiceState.listening || state == VoiceState.processing;
       _currentSnapshot = _currentSnapshot.copyWith(
         voice: _currentSnapshot.voice.copyWith(
-          status: SensorStatus.active,
+          status: isListening
+              ? SensorStatus.active
+              : (state == VoiceState.permissionRequired
+                  ? SensorStatus.permissionRequired
+                  : (state == VoiceState.error ? SensorStatus.error : SensorStatus.inactive)),
           lastUpdate: DateTime.now(),
           rawValues: {
-            'listening': true,
-            'transcript': phrase,
+            'listening': isListening,
+            'transcript': _voiceService.latestTranscript,
+            'state': state.name,
           },
-          filteredValues: {
-            'distressCandidate': true,
-          },
-          confidence: 0.90,
-          eventClassification: 'DISTRESS_TRIGGER',
         ),
         timestamp: DateTime.now(),
       );

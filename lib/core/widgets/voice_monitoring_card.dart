@@ -1,22 +1,15 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:permission_handler/permission_handler.dart';
 
+import '../../core/services/voice_service.dart';
 import '../../providers/repository_providers.dart';
 import '../theme/app_colors.dart';
 import '../theme/radius.dart';
 import '../theme/spacing.dart';
 import '../theme/text_styles.dart';
 import 'glass_card.dart';
-
-enum VoiceMonitoringDisplayState {
-  off,
-  starting,
-  listening,
-  processing,
-  permissionRequired,
-  error,
-}
 
 class VoiceMonitoringCard extends ConsumerStatefulWidget {
   const VoiceMonitoringCard({
@@ -49,37 +42,13 @@ class _VoiceMonitoringCardState extends ConsumerState<VoiceMonitoringCard>
     super.dispose();
   }
 
-  VoiceMonitoringDisplayState _resolveState(
-    bool hasPermission,
-    bool isListening,
-    bool isSttAvailable,
-    String latestTranscript,
-  ) {
-    if (!hasPermission) return VoiceMonitoringDisplayState.permissionRequired;
-    if (isListening) {
-      if (latestTranscript.isNotEmpty) {
-        return VoiceMonitoringDisplayState.processing;
-      }
-      return VoiceMonitoringDisplayState.listening;
-    }
-    if (isSttAvailable) return VoiceMonitoringDisplayState.starting;
-    return VoiceMonitoringDisplayState.off;
-  }
-
   @override
   Widget build(BuildContext context) {
     final engine = ref.watch(guardianEngineProvider);
     final voiceService = engine.voiceService;
+    final state = voiceService.state;
 
-    final displayState = _resolveState(
-      voiceService.hasMicPermission,
-      voiceService.isListening,
-      voiceService.isSttAvailable,
-      voiceService.latestTranscript,
-    );
-
-    final isActuallyListening = displayState == VoiceMonitoringDisplayState.listening ||
-        displayState == VoiceMonitoringDisplayState.processing;
+    final isActuallyListening = state == VoiceState.listening || state == VoiceState.processing;
 
     if (isActuallyListening) {
       if (!_waveController.isAnimating) {
@@ -97,38 +66,56 @@ class _VoiceMonitoringCardState extends ConsumerState<VoiceMonitoringCard>
     String statusSubtitle;
     IconData iconData;
 
-    switch (displayState) {
-      case VoiceMonitoringDisplayState.listening:
+    switch (state) {
+      case VoiceState.listening:
         stateColor = const Color(0xFF00E676); // Neon safety green
-        statusTitle = 'LISTENING...';
-        statusSubtitle = 'Monitoring surroundings for distress keywords';
+        statusTitle = 'LISTENING';
+        statusSubtitle = 'Monitoring for distress';
         iconData = Icons.mic;
         break;
-      case VoiceMonitoringDisplayState.processing:
+      case VoiceState.processing:
         stateColor = AppColors.primaryPulse;
-        statusTitle = 'PROCESSING VOICE...';
-        statusSubtitle = '"${voiceService.latestTranscript}"';
+        statusTitle = 'PROCESSING VOICE';
+        statusSubtitle = voiceService.latestTranscript.isNotEmpty
+            ? '"${voiceService.latestTranscript}"'
+            : 'Analyzing acoustic input...';
         iconData = Icons.graphic_eq;
         break;
-      case VoiceMonitoringDisplayState.starting:
-        stateColor = const Color(0xFFFFD600);
+      case VoiceState.distressDetected:
+        stateColor = AppColors.error;
+        statusTitle = 'DISTRESS DETECTED';
+        statusSubtitle = voiceService.matchedKeywords.isNotEmpty
+            ? 'Matched: ${voiceService.matchedKeywords.join(", ")}'
+            : 'Distress keywords recognized';
+        iconData = Icons.warning_amber_rounded;
+        break;
+      case VoiceState.starting:
+        stateColor = const Color(0xFFFFD600); // Yellow
         statusTitle = 'STARTING...';
         statusSubtitle = 'Starting voice monitoring engine...';
         iconData = Icons.mic_none;
         break;
-      case VoiceMonitoringDisplayState.permissionRequired:
+      case VoiceState.paused:
+        stateColor = const Color(0xFFFF9100); // Amber
+        statusTitle = 'VOICE MONITORING PAUSED';
+        statusSubtitle = 'Voice monitoring paused / background restricted';
+        iconData = Icons.pause_circle_outline;
+        break;
+      case VoiceState.permissionRequired:
         stateColor = AppColors.warning;
-        statusTitle = 'PERMISSION REQUIRED';
-        statusSubtitle = 'Microphone permission required for distress recognition';
+        statusTitle = 'MICROPHONE PERMISSION REQUIRED';
+        statusSubtitle = voiceService.isPermanentlyDenied
+            ? 'Microphone permission is blocked in Android settings.'
+            : 'Microphone permission required for distress recognition';
         iconData = Icons.mic_off;
         break;
-      case VoiceMonitoringDisplayState.error:
+      case VoiceState.error:
         stateColor = AppColors.error;
-        statusTitle = 'VOICE MONITORING ERROR';
-        statusSubtitle = 'Speech recognition unavailable on this device';
+        statusTitle = 'VOICE MONITORING UNAVAILABLE';
+        statusSubtitle = voiceService.errorMessage ?? 'Speech recognition unavailable on this device';
         iconData = Icons.error_outline;
         break;
-      case VoiceMonitoringDisplayState.off:
+      case VoiceState.off:
         stateColor = AppColors.onSurfaceVariant;
         statusTitle = 'VOICE MONITORING OFF';
         statusSubtitle = 'Activate Guardian Mode to begin listening';
@@ -212,7 +199,7 @@ class _VoiceMonitoringCardState extends ConsumerState<VoiceMonitoringCard>
               ),
               const SizedBox(width: 6),
               Text(
-                displayState.name.toUpperCase(),
+                statusTitle,
                 style: AppTextStyles.labelSm.copyWith(
                   color: stateColor,
                   fontWeight: FontWeight.w800,
@@ -224,27 +211,33 @@ class _VoiceMonitoringCardState extends ConsumerState<VoiceMonitoringCard>
           ),
           const SizedBox(height: AppSpacing.md),
 
-          // Central Waveform / Visualizer Animation
+          // Central Animated Waveform / Equalizer Visualizer
           Center(
             child: isActuallyListening
                 ? AnimatedBuilder(
                     animation: _waveController,
                     builder: (context, child) {
                       return SizedBox(
-                        height: 36,
+                        height: 38,
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
-                          children: List.generate(14, (index) {
-                            final shift = (index / 14) * 2 * math.pi;
+                          children: List.generate(16, (index) {
+                            final shift = (index / 16) * 2 * math.pi;
                             final value = math.sin(_waveController.value * 2 * math.pi + shift).abs();
-                            final barHeight = 8.0 + value * 24.0;
+                            final barHeight = 8.0 + value * 26.0;
                             return Container(
                               margin: const EdgeInsets.symmetric(horizontal: 2),
                               width: 3.5,
                               height: barHeight,
                               decoration: BoxDecoration(
-                                color: stateColor.withValues(alpha: 0.4 + (value * 0.6)),
+                                color: stateColor.withValues(alpha: 0.35 + (value * 0.65)),
                                 borderRadius: AppRadius.borderFull,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: stateColor.withValues(alpha: 0.3 * value),
+                                    blurRadius: 4,
+                                  ),
+                                ],
                               ),
                             );
                           }),
@@ -257,7 +250,7 @@ class _VoiceMonitoringCardState extends ConsumerState<VoiceMonitoringCard>
                     alignment: Alignment.center,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(14, (index) {
+                      children: List.generate(16, (index) {
                         return Container(
                           margin: const EdgeInsets.symmetric(horizontal: 2),
                           width: 3.5,
@@ -273,7 +266,7 @@ class _VoiceMonitoringCardState extends ConsumerState<VoiceMonitoringCard>
           ),
           const SizedBox(height: AppSpacing.sm),
 
-          // Status & Action
+          // Status & Explanation
           Center(
             child: Column(
               children: [
@@ -302,11 +295,11 @@ class _VoiceMonitoringCardState extends ConsumerState<VoiceMonitoringCard>
           ),
 
           // Action Button for Permission or Retry
-          if (displayState == VoiceMonitoringDisplayState.permissionRequired) ...[
+          if (state == VoiceState.permissionRequired) ...[
             const SizedBox(height: AppSpacing.sm),
             SizedBox(
               width: double.infinity,
-              height: 36,
+              height: 38,
               child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.warning,
@@ -314,19 +307,26 @@ class _VoiceMonitoringCardState extends ConsumerState<VoiceMonitoringCard>
                   shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderSm),
                   padding: EdgeInsets.zero,
                 ),
-                icon: const Icon(Icons.mic, size: 16),
-                label: const Text('ENABLE MICROPHONE', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 11)),
+                icon: Icon(voiceService.isPermanentlyDenied ? Icons.settings : Icons.mic, size: 16),
+                label: Text(
+                  voiceService.isPermanentlyDenied ? 'OPEN SETTINGS' : 'ENABLE MICROPHONE',
+                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 11),
+                ),
                 onPressed: () async {
-                  await voiceService.requestPermission();
+                  if (voiceService.isPermanentlyDenied) {
+                    await openAppSettings();
+                  } else {
+                    await voiceService.requestPermission();
+                  }
                   if (mounted) setState(() {});
                 },
               ),
             ),
-          ] else if (displayState == VoiceMonitoringDisplayState.error) ...[
+          ] else if (state == VoiceState.error) ...[
             const SizedBox(height: AppSpacing.sm),
             SizedBox(
               width: double.infinity,
-              height: 36,
+              height: 38,
               child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryPulse,

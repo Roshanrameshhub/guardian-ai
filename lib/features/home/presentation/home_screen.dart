@@ -379,16 +379,24 @@ class _HomeBody extends ConsumerWidget {
                 children: [
                   Expanded(
                     child: GlassCard(
+                      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md, horizontal: AppSpacing.sm),
                       onTap: () {
                         controller.fakeCall();
                         context.push(RoutePaths.fakeCall);
                       },
-                      child: const Row(
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(AppIcons.phone, color: AppColors.primaryPulse),
-                          SizedBox(width: 8),
-                          Text('Fake Call'),
+                          const Icon(AppIcons.phone, color: AppColors.primaryPulse, size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Fake Call',
+                            style: AppTextStyles.bodyMd.copyWith(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
+                              color: AppColors.onSurface,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -396,21 +404,28 @@ class _HomeBody extends ConsumerWidget {
                   const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: GlassCard(
+                      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md, horizontal: AppSpacing.sm),
                       onTap: () {
                         controller.fakeMessage();
                         context.push(RoutePaths.fakeMessage);
                       },
-                      child: const Row(
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(AppIcons.message, color: AppColors.primaryPulse),
-                          SizedBox(width: 8),
-                          Text('Fake Text'),
+                          const Icon(AppIcons.message, color: AppColors.primaryPulse, size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Fake Text',
+                            style: AppTextStyles.bodyMd.copyWith(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
+                              color: AppColors.onSurface,
+                            ),
+                          ),
                         ],
                       ),
                     ),
                   ),
-
                 ],
               ),
             ),

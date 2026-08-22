@@ -175,6 +175,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           const SizedBox(height: AppSpacing.lg),
                           _SocialButton(
                             label: 'Continue with Google',
+                            isLoading: state.isLoading,
                             onTap: () async {
                               final ok = await controller.signInWithGoogle();
                               if (ok && context.mounted) context.go(RoutePaths.home);
@@ -219,27 +220,75 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 }
 
 class _SocialButton extends StatelessWidget {
-  const _SocialButton({required this.label, required this.onTap});
+  const _SocialButton({
+    required this.label,
+    required this.onTap,
+    this.isLoading = false,
+  });
 
   final String label;
   final VoidCallback onTap;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColors.surfaceContainerHighest,
-      borderRadius: AppRadius.borderXl,
+      color: Colors.white.withValues(alpha: 0.08),
+      borderRadius: AppRadius.borderMd,
       child: InkWell(
-        onTap: onTap,
-        borderRadius: AppRadius.borderXl,
+        onTap: isLoading ? null : onTap,
+        borderRadius: AppRadius.borderMd,
         child: Container(
-          height: 48,
-          alignment: Alignment.center,
+          height: 50,
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
           decoration: BoxDecoration(
-            borderRadius: AppRadius.borderXl,
-            border: Border.all(color: AppColors.glassBorder),
+            borderRadius: AppRadius.borderMd,
+            border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
           ),
-          child: Text(label, style: AppTextStyles.labelLg),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (isLoading)
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              else ...[
+                // High-fidelity Google G icon container
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: const Text(
+                    'G',
+                    style: TextStyle(
+                      fontFamily: 'Roboto',
+                      fontWeight: FontWeight.w900,
+                      fontSize: 15,
+                      color: Color(0xFF4285F4), // Google Blue
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Text(
+                  label,
+                  style: AppTextStyles.bodyMd.copyWith(
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.3,
+                    color: AppColors.onSurface,
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );

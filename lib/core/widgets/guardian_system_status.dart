@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/network/api_client.dart';
+import '../../core/services/voice_service.dart';
 import '../../features/guardian/presentation/guardian_controller.dart';
 import '../../providers/repository_providers.dart';
 import '../theme/app_colors.dart';
@@ -145,44 +146,70 @@ class GuardianSystemStatus extends ConsumerWidget {
             : 'Standby');
 
     // 5. Voice Monitoring
-    final voiceState = !voiceService.hasMicPermission
-        ? SystemIndicatorState.permissionRequired
-        : (voiceService.isListening
-            ? SystemIndicatorState.active
-            : (voiceService.isSttAvailable
-                ? SystemIndicatorState.starting
-                : SystemIndicatorState.notEnabled));
-    final voiceText = !voiceService.hasMicPermission
-        ? 'Permission Required'
-        : (voiceService.isListening
-            ? 'Listening'
-            : (voiceService.isSttAvailable ? 'STT Ready' : 'Standby'));
+    SystemIndicatorState voiceState;
+    String voiceText;
+    switch (voiceService.state) {
+      case VoiceState.listening:
+        voiceState = SystemIndicatorState.active;
+        voiceText = 'LISTENING';
+        break;
+      case VoiceState.processing:
+        voiceState = SystemIndicatorState.active;
+        voiceText = 'PROCESSING';
+        break;
+      case VoiceState.distressDetected:
+        voiceState = SystemIndicatorState.error;
+        voiceText = 'DISTRESS TRIGGER';
+        break;
+      case VoiceState.starting:
+        voiceState = SystemIndicatorState.starting;
+        voiceText = 'Starting...';
+        break;
+      case VoiceState.paused:
+        voiceState = SystemIndicatorState.starting;
+        voiceText = 'Paused (BG)';
+        break;
+      case VoiceState.permissionRequired:
+        voiceState = SystemIndicatorState.permissionRequired;
+        voiceText = 'Permission Required';
+        break;
+      case VoiceState.error:
+        voiceState = SystemIndicatorState.error;
+        voiceText = 'Unavailable';
+        break;
+      case VoiceState.off:
+        voiceState = SystemIndicatorState.notEnabled;
+        voiceText = 'Standby';
+        break;
+    }
 
-    // 6. Journey Watchdog
-    final journeyState = isJourneyActive
+    // 6. Route Watchdog
+    final routeState = isJourneyActive || isGuardianActive
         ? SystemIndicatorState.active
         : SystemIndicatorState.notEnabled;
-    final journeyText = isJourneyActive ? 'Active Tracking' : 'Idle';
+    final routeText = isJourneyActive
+        ? 'Safe Corridor Active'
+        : (isGuardianActive ? 'Active Watch' : 'Standby');
 
-    // 7. Route Watchdog
-    final routeState = isJourneyActive
+    // 7. Risk Engine
+    final riskState = isGuardianActive || isJourneyActive
         ? SystemIndicatorState.active
         : SystemIndicatorState.notEnabled;
-    final routeText = isJourneyActive ? 'Safe Corridor Active' : 'Idle';
+    final riskText = isGuardianActive || isJourneyActive ? 'Active (Multi-Signal)' : 'Standby';
 
-    // 8. Heartbeat
+    // 8. Notifications / FCM
+    final fcmState = SystemIndicatorState.active;
+    final fcmText = 'Active (Synced)';
+
+    // 9. Periodic Heartbeat
     final heartbeatState = isGuardianActive
         ? SystemIndicatorState.active
         : SystemIndicatorState.notEnabled;
-    final heartbeatText = isGuardianActive ? 'Connected (30s interval)' : 'Standby';
-
-    // 9. Push Notifications / FCM
-    final fcmState = SystemIndicatorState.active;
-    final fcmText = 'Token Synced';
+    final heartbeatText = isGuardianActive ? 'Connected (${engine.heartbeatIntervalSeconds}s)' : 'Standby';
 
     // 10. Emergency SOS
     final sosState = SystemIndicatorState.active;
-    final sosText = 'Ready (Instant Dispatch)';
+    final sosText = 'Ready (Instant)';
 
     // 11. Backend Connection
     final backendHasError = ApiClient.lastStatusCode != null &&
@@ -191,19 +218,19 @@ class GuardianSystemStatus extends ConsumerWidget {
         ? SystemIndicatorState.offline
         : SystemIndicatorState.active;
     final backendText = backendHasError
-        ? 'Offline (Status ${ApiClient.lastStatusCode})'
+        ? 'Offline (${ApiClient.lastStatusCode})'
         : 'Connected';
 
     final badges = [
       SystemBadge(name: 'GPS', statusText: gpsText, state: gpsState),
-      SystemBadge(name: 'Guardian Mode', statusText: guardianText, state: guardianState),
       SystemBadge(name: 'Motion Sensor', statusText: accelText, state: accelState),
       SystemBadge(name: 'Gyroscope', statusText: gyroText, state: gyroState),
-      SystemBadge(name: 'Voice Monitoring', statusText: voiceText, state: voiceState),
-      SystemBadge(name: 'Journey Watchdog', statusText: journeyText, state: journeyState),
+      SystemBadge(name: 'Voice', statusText: voiceText, state: voiceState),
       SystemBadge(name: 'Route Watchdog', statusText: routeText, state: routeState),
+      SystemBadge(name: 'Risk Engine', statusText: riskText, state: riskState),
+      SystemBadge(name: 'Notifications', statusText: fcmText, state: fcmState),
+      SystemBadge(name: 'Guardian Mode', statusText: guardianText, state: guardianState),
       SystemBadge(name: 'Heartbeat', statusText: heartbeatText, state: heartbeatState),
-      SystemBadge(name: 'Push Notifications', statusText: fcmText, state: fcmState),
       SystemBadge(name: 'Emergency SOS', statusText: sosText, state: sosState),
       SystemBadge(name: 'Backend Connection', statusText: backendText, state: backendState),
     ];

@@ -9,6 +9,8 @@ enum SafetyEventType {
   journeyCompleted,
   shakeDetected,
   phoneDrop,
+  fallDetected,
+  voiceDistress,
   loudNoiseDetected,
   prolongedStop,
   movementResumed,

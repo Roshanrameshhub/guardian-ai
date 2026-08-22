@@ -121,7 +121,7 @@ class AuthService:
 
     async def login_with_google(self, req: GoogleAuthRequest) -> AuthResponse:
         """
-        Verify Google ID token via Google TokenInfo endpoint,
+        Verify Google identity token (ID token or Access token via UserInfo),
         find existing user or auto-provision Guardian user,
         and issue Guardian JWT access + refresh tokens.
         """
@@ -133,36 +133,61 @@ class AuthService:
         log.info("[GOOGLE_AUTH] token verification started")
 
         google_user_info = None
+        raw_token = req.id_token.strip()
 
-        # Call Google tokeninfo API
-        try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            # 1. Try Google TokenInfo endpoint (for ID tokens)
+            try:
                 resp = await client.get(
-                    f"https://oauth2.googleapis.com/tokeninfo?id_token={req.id_token}"
+                    f"https://oauth2.googleapis.com/tokeninfo?id_token={raw_token}"
                 )
                 if resp.status_code == 200:
                     google_user_info = resp.json()
-                    log.info("[GOOGLE_AUTH] token verification success")
-                else:
-                    log.warning("[GOOGLE_AUTH] token verification failure", status_code=resp.status_code)
-        except Exception as e:
-            log.warning("[GOOGLE_AUTH] token verification network error", error=str(e))
+                    log.info("[GOOGLE_AUTH] tokeninfo verification success")
+            except Exception as e:
+                log.warning("[GOOGLE_AUTH] tokeninfo network error", error=str(e))
 
+            # 2. Fallback: Try Google UserInfo endpoint (for OAuth access tokens)
+            if not google_user_info or "email" not in google_user_info:
+                try:
+                    userinfo_resp = await client.get(
+                        "https://www.googleapis.com/oauth2/v3/userinfo",
+                        headers={"Authorization": f"Bearer {raw_token}"},
+                    )
+                    if userinfo_resp.status_code == 200:
+                        google_user_info = userinfo_resp.json()
+                        log.info("[GOOGLE_AUTH] userinfo endpoint verification success")
+                except Exception as e:
+                    log.warning("[GOOGLE_AUTH] userinfo network error", error=str(e))
+
+        # 3. Validate extracted user information
         if google_user_info and "email" in google_user_info:
             aud = google_user_info.get("aud")
-            if settings.google_client_id and aud and aud != settings.google_client_id:
-                log.warning(
-                    "[GOOGLE_AUTH] token audience mismatch",
-                    expected=settings.google_client_id,
-                    received=aud,
+            azp = google_user_info.get("azp")
+            project_prefix = "638591615239"
+
+            if settings.google_client_id and aud:
+                # Accept exact web client ID, matching project ID prefix, or matching authorized party
+                is_valid_aud = (
+                    aud == settings.google_client_id
+                    or aud.startswith(project_prefix)
+                    or (azp and azp.startswith(project_prefix))
+                    or settings.app_debug
                 )
-                raise InvalidCredentialsError("Invalid token audience.")
+                if not is_valid_aud:
+                    log.warning(
+                        "[GOOGLE_AUTH] token audience mismatch",
+                        expected=settings.google_client_id,
+                        received_aud=aud,
+                        received_azp=azp,
+                    )
+                    raise InvalidCredentialsError("Invalid token audience.")
         else:
             # Development/Testing fallback for mock token strings
-            if (settings.app_env in ("development", "test") or settings.app_debug) and "mock" in req.id_token.lower():
+            if (settings.app_env in ("development", "test") or settings.app_debug) and "mock" in raw_token.lower():
                 mock_email = "google_user@guardian.ai"
-                if "@" in req.id_token:
-                    mock_email = req.id_token.split("_")[-1]
+                if "@" in raw_token:
+                    mock_email = raw_token.split("_")[-1]
                 google_user_info = {
                     "email": mock_email,
                     "name": "Google Guardian User",

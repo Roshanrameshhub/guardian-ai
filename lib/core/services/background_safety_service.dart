@@ -9,7 +9,7 @@ import '../utils/dev_log.dart';
 /// for Guardian Mode and active Journeys.
 ///
 /// Ensures safety monitoring survives when the app is minimized or the screen is locked,
-/// displaying real-time GPS accuracy, battery level, and dynamic risk updates.
+/// displaying real-time GPS accuracy, battery level, destination progress, and dynamic risk updates.
 class BackgroundSafetyService {
   BackgroundSafetyService({
     FlutterLocalNotificationsPlugin? localNotifications,
@@ -51,7 +51,7 @@ class BackgroundSafetyService {
     }
   }
 
-  /// Start persistent foreground service notification when Guardian Mode or Journey begins.
+  /// Start persistent foreground service notification when Guardian Mode begins.
   Future<void> startForegroundService({
     String title = 'Guardian AI Active',
     String? body,
@@ -64,6 +64,58 @@ class BackgroundSafetyService {
     final resolvedBody = body ?? await _buildStatusBody(currentPosition, batteryLevel);
     await _showNotification(title, resolvedBody, isOngoing: true);
     DevLog.log('BG_SERVICE', 'Foreground service started: "$title" - "$resolvedBody"');
+  }
+
+  /// Start active safe journey foreground notification.
+  Future<void> startJourneyNotification({
+    required String destination,
+    required int estimatedMinutes,
+    Position? currentPosition,
+    int? batteryLevel,
+  }) async {
+    await initialize();
+    _isServiceRunning = true;
+
+    final battery = batteryLevel ?? await _getBatteryPercent();
+    final gpsString = currentPosition != null
+        ? 'GPS ±${currentPosition.accuracy.toStringAsFixed(0)}m'
+        : 'GPS Active';
+    final body = 'To: $destination · ETA: $estimatedMinutes min · $gpsString · Batt: $battery%';
+
+    await _showNotification('Safe Journey Active', body, isOngoing: true);
+    DevLog.log('BG_SERVICE', 'Journey notification started: "Safe Journey Active" - "$body"');
+  }
+
+  /// Dynamically update journey progress and ETA.
+  Future<void> updateJourneyProgress({
+    required String destination,
+    required double progressPercent,
+    required int minutesLeft,
+    Position? currentPosition,
+    int? batteryLevel,
+    bool isElevatedRisk = false,
+  }) async {
+    if (!_isServiceRunning) return;
+
+    final battery = batteryLevel ?? await _getBatteryPercent();
+    final gpsString = currentPosition != null
+        ? 'GPS ±${currentPosition.accuracy.toStringAsFixed(0)}m'
+        : 'GPS Active';
+    final pct = (progressPercent * 100).clamp(0, 100).toInt();
+
+    final body = isElevatedRisk
+        ? '⚠ Elevated risk detected · To: $destination ($pct%) · $gpsString'
+        : 'To: $destination ($pct%) · ETA: $minutesLeft min · $gpsString · Batt: $battery%';
+
+    final title = isElevatedRisk ? '⚠ Safety Alert · Journey Active' : 'Safe Journey Active';
+
+    await _showNotification(
+      title,
+      body,
+      isOngoing: true,
+      isElevatedRisk: isElevatedRisk,
+    );
+    DevLog.log('BG_SERVICE', 'Journey progress updated: "$title" - "$body"');
   }
 
   /// Update persistent notification with real-time GPS, battery, or elevated risk information.
@@ -86,7 +138,7 @@ class BackgroundSafetyService {
     DevLog.log('BG_SERVICE', 'Foreground notification updated: "$title" - "$resolvedBody"');
   }
 
-  /// Stop foreground service cleanly and remove persistent notification.
+  /// Stop foreground service cleanly and remove persistent notification immediately.
   Future<void> stopForegroundService() async {
     _isServiceRunning = false;
     try {

@@ -102,6 +102,16 @@ class _LiveJourneyScreenState extends ConsumerState<LiveJourneyScreen> {
 
     _startTracking();
     _subscribeHardwareSensors();
+
+    // Start persistent journey foreground notification
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      try {
+        ref.read(backgroundSafetyServiceProvider).startJourneyNotification(
+          destination: widget.destinationName,
+          estimatedMinutes: _estimatedRemainingMinutes,
+        );
+      } catch (_) {}
+    });
   }
 
   void _logEvent({
@@ -205,6 +215,20 @@ class _LiveJourneyScreenState extends ConsumerState<LiveJourneyScreen> {
         _accuracyMeters = accuracy;
       });
 
+      final progressPct = widget.estimatedDistanceKm > 0
+          ? ((widget.estimatedDistanceKm - distKm) / widget.estimatedDistanceKm).clamp(0.0, 1.0)
+          : 0.0;
+
+      // Update dynamic persistent notification
+      try {
+        ref.read(backgroundSafetyServiceProvider).updateJourneyProgress(
+          destination: widget.destinationName,
+          progressPercent: progressPct,
+          minutesLeft: etaMins,
+          currentPosition: pos,
+        );
+      } catch (_) {}
+
       // Animate camera to follow user if auto-centered
       if (_isAutoCentered) {
         _mapController?.animateCamera(
@@ -306,12 +330,31 @@ class _LiveJourneyScreenState extends ConsumerState<LiveJourneyScreen> {
       _sensorSubscription = sensorService.anomalyStream.listen((anomaly) {
         if (!mounted) return;
 
-        final isDrop = anomaly == MotionEventType.phoneDrop;
+        SafetyEventType eventType;
+        String dialogTitle;
+        String dialogSubtitle;
+
+        if (anomaly == MotionEventType.fallDetected) {
+          eventType = SafetyEventType.fallDetected;
+          dialogTitle = '⚠ POSSIBLE FALL DETECTED';
+          dialogSubtitle = 'Fall impact detected with subsequent stillness.\nAre you in danger?';
+        } else if (anomaly == MotionEventType.phoneDrop) {
+          eventType = SafetyEventType.phoneDrop;
+          dialogTitle = '⚠ POSSIBLE DROP DETECTED';
+          dialogSubtitle = 'Sudden high acceleration impact detected.\nAre you in danger?';
+        } else {
+          eventType = SafetyEventType.shakeDetected;
+          dialogTitle = '⚠ UNUSUAL MOVEMENT DETECTED';
+          dialogSubtitle = 'Sudden shake or impact detected.\nAre you in danger?';
+        }
+
         _logEvent(
-          type: isDrop ? SafetyEventType.phoneDrop : SafetyEventType.shakeDetected,
-          severity: SafetyEventSeverity.warning,
-          title: isDrop ? 'Severe phone drop detected' : 'Sudden shake / impact detected',
-          message: 'Checking user safety status',
+          type: eventType,
+          severity: anomaly == MotionEventType.fallDetected
+              ? SafetyEventSeverity.critical
+              : SafetyEventSeverity.warning,
+          title: dialogTitle,
+          message: dialogSubtitle,
         );
 
         if (_isDeviationAlertOpen) return;
@@ -319,10 +362,9 @@ class _LiveJourneyScreenState extends ConsumerState<LiveJourneyScreen> {
         showSafetyConfirmationDialog(
           context: context,
           ref: ref,
-          title: isDrop ? '⚠ SEVERE DROP DETECTED' : '⚠ UNUSUAL MOVEMENT DETECTED',
-          subtitle:
-              'Sudden high acceleration or fall detected.\nAre you in danger?',
-          triggerSource: 'sensor_anomaly',
+          title: dialogTitle,
+          subtitle: dialogSubtitle,
+          triggerSource: eventType.name,
           onSafeConfirmed: () {
             _isDeviationAlertOpen = false;
             _logEvent(
@@ -343,10 +385,10 @@ class _LiveJourneyScreenState extends ConsumerState<LiveJourneyScreen> {
         if (!mounted) return;
 
         _logEvent(
-          type: SafetyEventType.loudNoiseDetected,
+          type: SafetyEventType.voiceDistress,
           severity: SafetyEventSeverity.critical,
-          title: 'Voice distress trigger: "$transcript"',
-          message: 'Emergency safety prompt initiated',
+          title: '⚠ POSSIBLE DISTRESS',
+          message: '"$transcript" detected.',
         );
 
         if (_isDeviationAlertOpen) return;
@@ -354,9 +396,8 @@ class _LiveJourneyScreenState extends ConsumerState<LiveJourneyScreen> {
         showSafetyConfirmationDialog(
           context: context,
           ref: ref,
-          title: '🚨 VOICE EMERGENCY TRIGGER',
-          subtitle:
-              'Distress detected: "$transcript"\nSOS will trigger if not confirmed.',
+          title: '⚠ POSSIBLE DISTRESS',
+          subtitle: '"$transcript" detected.\nAre you in danger?',
           triggerSource: 'voice_trigger',
           onSafeConfirmed: () {
             _isDeviationAlertOpen = false;
@@ -394,6 +435,10 @@ class _LiveJourneyScreenState extends ConsumerState<LiveJourneyScreen> {
     } catch (_) {
       // Continue to summary even if offline
     } finally {
+      try {
+        ref.read(backgroundSafetyServiceProvider).stopForegroundService();
+      } catch (_) {}
+
       if (mounted) {
         setState(() => _isCompleting = false);
         final warningCount = _safetyEvents
@@ -423,6 +468,9 @@ class _LiveJourneyScreenState extends ConsumerState<LiveJourneyScreen> {
     _sensorSubscription?.cancel();
     _voiceSubscription?.cancel();
     _journeyTimer?.cancel();
+    try {
+      ref.read(backgroundSafetyServiceProvider).stopForegroundService();
+    } catch (_) {}
     super.dispose();
   }
 

@@ -158,22 +158,26 @@ class AuthController extends StateNotifier<AuthFormState> {
 
         final auth = await account.authentication;
         final serverIdToken = auth.idToken;
-        final tokenReceived = serverIdToken != null && serverIdToken.isNotEmpty;
-        DevLog.log('GOOGLE_AUTH', 'Google credential received = $tokenReceived');
-        DevLog.log('GOOGLE_AUTH', 'ID token received = $tokenReceived');
-        DevLog.log('GOOGLE_AUTH', 'access token received = ${auth.accessToken != null}');
+        final accessToken = auth.accessToken;
+        final hasIdToken = serverIdToken != null && serverIdToken.isNotEmpty;
+        final hasAccessToken = accessToken != null && accessToken.isNotEmpty;
 
-        if (!tokenReceived) {
+        DevLog.log('GOOGLE_AUTH', 'ID token received = $hasIdToken');
+        DevLog.log('GOOGLE_AUTH', 'Access token received = $hasAccessToken');
+
+        if (hasIdToken) {
+          idToken = serverIdToken;
+        } else if (hasAccessToken) {
+          idToken = accessToken;
+        } else {
           DevLog.log('GOOGLE_AUTH', 'ERROR CODE = GOOGLE_TOKEN_MISSING');
-          DevLog.log('GOOGLE_AUTH', 'ERROR MESSAGE = Google SDK did not return an ID token. Check SHA-1 registration.');
+          DevLog.log('GOOGLE_AUTH', 'ERROR MESSAGE = Google SDK did not return an identity token.');
           state = state.copyWith(
             isLoading: false,
-            error: '[GOOGLE_TOKEN_MISSING] Google did not return a valid server ID token. '
-                'Verify the debug SHA-1 (E7:87:1A:B1:7B:C7:9C:16:14:AA:07:F7:30:41:94:0F:27:83:36:DF) is registered in Google Cloud Console.',
+            error: '[GOOGLE_TOKEN_MISSING] Google Sign-In could not obtain credential token.',
           );
           return false;
         }
-        idToken = serverIdToken;
       }
 
       await _ref.read(authRepositoryProvider).loginWithGoogle(idToken);

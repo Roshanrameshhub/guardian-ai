@@ -78,10 +78,10 @@ class MultiStageFallDetector {
   Timer? _immobilityTimer;
 
   // Calibration thresholds
-  static const double _freefallThreshold = 4.0; // m/s² (~0.4g)
+  static const double _freefallThreshold = 5.0; // m/s² (~0.5g)
   static const double _impactThreshold = 25.0; // m/s² (~2.5g)
-  static const double _gyroRotationThreshold = 4.0; // rad/s
-  static const double _stillnessVarianceLimit = 1.8; // m/s² std dev for post-fall resting
+  static const double _gyroRotationThreshold = 3.5; // rad/s
+  static const double _stillnessVarianceLimit = 2.4; // m/s² std dev for post-fall resting
 
   /// Machine learning sensitivity multiplier calibrated dynamically from user false alarm feedback.
   /// (e.g. 1.10 = 10% higher threshold to prevent repeated false positives).
@@ -98,7 +98,7 @@ class MultiStageFallDetector {
   void processAccelSample(double x, double y, double z, double magnitude) {
     final now = DateTime.now();
 
-    // Stage 1: Freefall candidate detection
+    // Stage 1: Freefall candidate detection (< 5.0 m/s²)
     if (magnitude < _freefallThreshold && !_inCandidateWindow) {
       _inCandidateWindow = true;
       _freefallStartTime = now;
@@ -106,6 +106,22 @@ class MultiStageFallDetector {
       _peakGyro = 0.0;
       _postImpactWindow.clear();
       DevLog.log('FALL_DETECTOR', 'Stage 1: Potential freefall detected (mag=${magnitude.toStringAsFixed(2)} m/s²)');
+      return;
+    }
+
+    // Direct sudden hard impact candidate (> 22.5 m/s²) without prior freefall
+    if (!_inCandidateWindow && magnitude >= effectiveImpactThreshold) {
+      _inCandidateWindow = true;
+      _impactTime = now;
+      _peakAccel = magnitude;
+      _postImpactWindow.clear();
+      DevLog.log('FALL_DETECTOR', 'Stage 1 & 2: Direct sudden impact spike detected (mag=${magnitude.toStringAsFixed(2)} m/s²)');
+
+      // Schedule Stage 5 (Post-impact immobility check after 1.8s)
+      _immobilityTimer?.cancel();
+      _immobilityTimer = Timer(const Duration(milliseconds: 1800), () {
+        _evaluateCompleteFallSequence();
+      });
       return;
     }
 
@@ -120,8 +136,8 @@ class MultiStageFallDetector {
             ? now.difference(_freefallStartTime!).inMilliseconds
             : 999;
 
-        // Valid impact within 600ms of freefall entry
-        if (elapsedSinceFreefall <= 600 || _freefallStartTime == null) {
+        // Valid impact within 800ms of freefall entry
+        if (elapsedSinceFreefall <= 800 || _freefallStartTime == null) {
           _impactTime = now;
           DevLog.log('FALL_DETECTOR', 'Stage 2 & 4: Impact spike recorded (${magnitude.toStringAsFixed(2)} m/s² vs threshold ${effectiveImpactThreshold.toStringAsFixed(2)})');
 
@@ -135,7 +151,7 @@ class MultiStageFallDetector {
     } else if (_impactTime != null) {
       // Accumulate post-impact samples for Stage 5 (samples after impact peak)
       _postImpactWindow.add(magnitude);
-      if (_postImpactWindow.length > 50) {
+      if (_postImpactWindow.length > 60) {
         _postImpactWindow.removeAt(0);
       }
     }
@@ -143,10 +159,16 @@ class MultiStageFallDetector {
 
   /// Ingest raw gyroscope sample.
   void processGyroSample(double x, double y, double z, double rotationMagnitude) {
-    if (_inCandidateWindow) {
-      if (rotationMagnitude > _peakGyro) {
-        _peakGyro = rotationMagnitude;
-      }
+    if (rotationMagnitude > _peakGyro) {
+      _peakGyro = rotationMagnitude;
+    }
+
+    // If sudden high rotational tumble occurs and not in candidate window, open candidate window
+    if (!_inCandidateWindow && rotationMagnitude >= _gyroRotationThreshold) {
+      _inCandidateWindow = true;
+      _freefallStartTime = DateTime.now();
+      _postImpactWindow.clear();
+      DevLog.log('FALL_DETECTOR', 'Stage 3: High rotational tumble candidate (${rotationMagnitude.toStringAsFixed(2)} rad/s)');
     }
   }
 
@@ -186,7 +208,7 @@ class MultiStageFallDetector {
     FallEvaluationResult result = FallEvaluationResult.noFall;
     String reason = 'Normal movement pattern.';
 
-    if (confidence >= 0.70 && hasImpact && (hasRotation || hasFreefall)) {
+    if (confidence >= 0.65 && hasImpact && (hasRotation || hasFreefall || isImmobile)) {
       result = FallEvaluationResult.fallSuspected;
       reason = 'Multi-stage fall criteria satisfied: impact (${_peakAccel.toStringAsFixed(1)} m/s²), '
           'rotation (${_peakGyro.toStringAsFixed(1)} rad/s), post-impact immobility=$isImmobile.';

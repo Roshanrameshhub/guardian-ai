@@ -203,13 +203,28 @@ class GuardianEngine with WidgetsBindingObserver {
     _sensorService.startMonitoring();
     _sensorSubscription?.cancel();
     _sensorSubscription = _sensorService.anomalyStream.listen((anomaly) {
-      final isDrop = anomaly == MotionEventType.phoneDrop;
-      logEvent(
-        type: isDrop ? SafetyEventType.phoneDrop : SafetyEventType.shakeDetected,
-        severity: SafetyEventSeverity.warning,
-        title: isDrop ? 'Physical Drop Detected' : 'Physical Shake / Impact Detected',
-        message: 'High acceleration peak recorded by accelerometer.',
-      );
+      if (anomaly == MotionEventType.fallDetected) {
+        logEvent(
+          type: SafetyEventType.fallDetected,
+          severity: SafetyEventSeverity.critical,
+          title: '⚠ POSSIBLE FALL DETECTED',
+          message: 'Multi-stage fall signature detected with post-impact stillness.',
+        );
+      } else if (anomaly == MotionEventType.phoneDrop) {
+        logEvent(
+          type: SafetyEventType.phoneDrop,
+          severity: SafetyEventSeverity.warning,
+          title: '⚠ POSSIBLE DROP DETECTED',
+          message: 'Freefall impact spike recorded by accelerometer.',
+        );
+      } else {
+        logEvent(
+          type: SafetyEventType.shakeDetected,
+          severity: SafetyEventSeverity.warning,
+          title: '⚠ UNUSUAL MOVEMENT DETECTED',
+          message: 'High acceleration shake peak recorded by accelerometer.',
+        );
+      }
     });
 
     // 6. Start voice monitoring lifecycle & listen to voice triggers
@@ -217,10 +232,10 @@ class GuardianEngine with WidgetsBindingObserver {
     _voiceSubscription?.cancel();
     _voiceSubscription = _voiceService.emergencyTriggerStream.listen((phrase) {
       logEvent(
-        type: SafetyEventType.loudNoiseDetected,
+        type: SafetyEventType.voiceDistress,
         severity: SafetyEventSeverity.critical,
-        title: 'Emergency Voice Trigger',
-        message: 'Matched trigger phrase: "$phrase"',
+        title: '⚠ POSSIBLE DISTRESS',
+        message: '"$phrase" detected.',
       );
     });
 

@@ -32,9 +32,17 @@ class _GuardianAppState extends ConsumerState<GuardianApp> {
   @override
   void initState() {
     super.initState();
-    // Initialize real FCM notifications and channel handlers
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(fcmNotificationServiceProvider).initialize();
+    // Initialize real FCM notifications, prompt startup permissions, and acquire GPS lock
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        await ref.read(fcmNotificationServiceProvider).initialize();
+        final permissionMgr = ref.read(safetyPermissionManagerProvider);
+        await permissionMgr.requestStartupPermissions();
+
+        // Proactively acquire real GPS fix
+        final locService = ref.read(locationServiceProvider);
+        await locService.getCurrentPosition();
+      } catch (_) {}
     });
   }
 

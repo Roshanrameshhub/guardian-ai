@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/utils/dev_log.dart';
 import '../../providers/repository_providers.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_icons.dart';
@@ -15,11 +16,11 @@ import 'sos_dialog.dart';
 /// Shows an urgent 20-second safety confirmation prompt.
 ///
 /// Triggered by:
+/// - Voice distress / emergency keyword triggers
 /// - Sensor anomalies (violent shake, severe drop/fall)
 /// - Route deviation (moving off-course from planned safe route)
-/// - Voice distress / emergency keyword triggers
 ///
-/// If the user taps "I'M IN DANGER" or the 20-second timer expires with no response,
+/// If the user taps "I'M IN DANGER" / "SEND SOS" or the 20-second timer expires with no response,
 /// it immediately escalates to the official SOS emergency pipeline.
 Future<void> showSafetyConfirmationDialog({
   required BuildContext context,
@@ -72,6 +73,7 @@ class _SafetyConfirmationSheetState extends State<_SafetyConfirmationSheet> {
   @override
   void initState() {
     super.initState();
+    DevLog.log('CONFIRMATION', '[VOICE] countdown started (source: ${widget.triggerSource})');
     _startTimer();
   }
 
@@ -85,13 +87,21 @@ class _SafetyConfirmationSheetState extends State<_SafetyConfirmationSheet> {
         setState(() => _secondsRemaining--);
       } else {
         t.cancel();
-        _triggerEmergencySos();
+        _onCountdownExpired();
       }
     });
   }
 
   Future<void> _onSafe() async {
     _timer?.cancel();
+    DevLog.log('CONFIRMATION', '[VOICE] user marked safe');
+
+    // Resume voice listening if Guardian Mode is active
+    final voiceService = widget.ref.read(voiceServiceProvider);
+    if (voiceService.isMonitoring) {
+      voiceService.resumeListening();
+    }
+
     if (widget.onSafeConfirmed != null) {
       widget.onSafeConfirmed!();
     }
@@ -122,12 +132,34 @@ class _SafetyConfirmationSheetState extends State<_SafetyConfirmationSheet> {
     if (_isEscalated) return;
     _isEscalated = true;
     _timer?.cancel();
+    DevLog.log('CONFIRMATION', '[VOICE] SOS requested by user');
+
     if (mounted) {
       Navigator.of(context).pop();
       showEmergencySosModal(
         context: context,
         ref: widget.ref,
         triggerSource: widget.triggerSource,
+      );
+    }
+  }
+
+  void _onCountdownExpired() {
+    if (_isEscalated) return;
+    _isEscalated = true;
+    _timer?.cancel();
+    DevLog.log('CONFIRMATION', '[VOICE] countdown expired without response - escalating to emergency SOS');
+
+    // Pass through SOS escalation engine
+    final sosEngine = widget.ref.read(sosEscalationEngineProvider);
+    sosEngine.evaluateSignals(unansweredCriticalPrompt: true);
+
+    if (mounted) {
+      Navigator.of(context).pop();
+      showEmergencySosModal(
+        context: context,
+        ref: widget.ref,
+        triggerSource: '${widget.triggerSource}_countdown_expired',
       );
     }
   }
@@ -141,6 +173,8 @@ class _SafetyConfirmationSheetState extends State<_SafetyConfirmationSheet> {
   @override
   Widget build(BuildContext context) {
     final progress = _secondsRemaining / 20.0;
+    final isCritical = widget.title.contains('DISTRESS') || widget.title.contains('FALL');
+    final accentColor = isCritical ? AppColors.error : AppColors.warning;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -150,7 +184,7 @@ class _SafetyConfirmationSheetState extends State<_SafetyConfirmationSheet> {
         MediaQuery.paddingOf(context).bottom + AppSpacing.lg,
       ),
       child: GlassCard(
-        borderColor: AppColors.warning.withValues(alpha: 0.8),
+        borderColor: accentColor.withValues(alpha: 0.8),
         padding: const EdgeInsets.all(AppSpacing.xl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -160,11 +194,10 @@ class _SafetyConfirmationSheetState extends State<_SafetyConfirmationSheet> {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.warning.withValues(alpha: 0.15),
-                border: Border.all(color: AppColors.warning.withValues(alpha: 0.5), width: 2),
+                color: accentColor.withValues(alpha: 0.15),
+                border: Border.all(color: accentColor.withValues(alpha: 0.5), width: 2),
               ),
-              child: const Icon(AppIcons.warning, color: AppColors.warning, size: 36),
-
+              child: Icon(AppIcons.warning, color: accentColor, size: 36),
             ),
             const SizedBox(height: AppSpacing.md),
 
@@ -172,7 +205,7 @@ class _SafetyConfirmationSheetState extends State<_SafetyConfirmationSheet> {
             Text(
               widget.title,
               style: AppTextStyles.headlineMd.copyWith(
-                color: AppColors.warning,
+                color: accentColor,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.5,
               ),
@@ -198,7 +231,7 @@ class _SafetyConfirmationSheetState extends State<_SafetyConfirmationSheet> {
                     strokeWidth: 6,
                     backgroundColor: AppColors.surfaceContainerHigh,
                     valueColor: AlwaysStoppedAnimation<Color>(
-                      _secondsRemaining <= 5 ? AppColors.error : AppColors.warning,
+                      _secondsRemaining <= 5 ? AppColors.error : accentColor,
                     ),
                   ),
                 ),
