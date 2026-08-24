@@ -1,114 +1,137 @@
-Markdown
 
-````
 # 🛡️ Guardian AI
 
-> **Guardian AI** is an AI-powered personal safety mobile application that combines real-time GPS tracking, intelligent route planning, voice distress detection, motion sensing, and emergency SOS into one unified safety platform.
+<div align="center">
+
+### AI-Powered Personal Safety & Intelligent Emergency Response Platform
+
+*Protect • Detect • Assess • Respond*
+
+![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?style=for-the-badge&logo=flutter)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=for-the-badge&logo=fastapi)
+![Postgres](https://img.shields.io/badge/PostgreSQL-16-336791?style=for-the-badge&logo=postgresql)
+![Riverpod](https://img.shields.io/badge/Riverpod-State%20Management-7F52FF?style=for-the-badge)
+![Material3](https://img.shields.io/badge/Material%203-Premium-8B5CF6?style=for-the-badge)
+
+</div>
 
 ---
 
-## ✨ Features
+## 🌟 Overview
 
-### 🚀 Smart Safe Journey
-- Real-time GPS tracking
-- Safer, Fastest & Balanced route planning
-- Live ETA and distance monitoring
-- Route deviation detection
-- Safe arrival confirmation
+Guardian AI is an **AI-first personal safety application** that combines real-time GPS tracking, intelligent route planning, motion sensing, voice distress detection, and emergency SOS into one unified safety ecosystem.
 
-### 🎙️ Voice Distress Detection
-- Continuous voice monitoring in Guardian Mode
-- Detects emergency keywords like **Help**, **Danger**, and **Emergency**
-- 20-second safety confirmation before SOS
-- Hands-free emergency activation
-
-### 📳 Motion & Fall Detection
-- Accelerometer-based motion anomaly detection
-- Gyroscope-assisted fall validation
-- False-positive reduction using multi-signal verification
-- Emergency confirmation dialog
-
-### 🛡️ Guardian Mode
-- Background safety watchdog
-- GPS monitoring
-- Motion monitoring
-- Voice monitoring
-- Route watchdog
-- Risk assessment engine
-
-### 🚨 Intelligent SOS
-- One-tap emergency SOS
-- Automatic SOS based on verified risk score
-- Live location sharing
-- Trusted contact notifications
-- Emergency countdown cancellation
-
-### 👥 Trusted Contacts
-- Add/Edit/Delete emergency contacts
-- Native phone contact picker
-- Relationship & priority management
-- Live location sharing preferences
-
-### 🤖 AI Safety Intelligence
-- Risk score calculation
-- Crime-aware route evaluation
-- Weather-aware safety insights
-- Journey anomaly detection
+Instead of reacting to a single trigger, Guardian AI evaluates **multiple safety signals** before making emergency decisions.
 
 ---
 
-## 📱 Screens
+## ✨ Core Features
 
-- Splash Screen
-- Login & Google Authentication
-- Home Dashboard
-- Map & Route Planning
-- Journey Confirmation
-- Live Journey
-- Guardian Mode
-- Trusted Contacts
-- Activity Timeline
-- Profile & Settings
-- Emergency SOS
-
----
-
-## 🏗️ Tech Stack
-
-### Frontend
-- Flutter
-- Dart
-- Riverpod
-- Material 3
-- Google Maps Flutter
-
-### Backend
-- FastAPI
-- PostgreSQL
-- Redis
-- SQLAlchemy
-- JWT Authentication
-
-### AI & Services
-- Google Gemini
-- Google Directions API
-- Geolocator
-- Speech-to-Text
-- Sensors Plus
-- Firebase Cloud Messaging
-- Twilio
+| Feature | Description |
+|---------|-------------|
+| 🛰️ **Live GPS Tracking** | Real-time location, speed & ETA monitoring |
+| 🗺️ **Smart Route Planning** | Safer, Fastest & Balanced routes |
+| 🎙️ **Voice Distress AI** | Detects emergency keywords hands-free |
+| 📳 **Motion Detection** | Accelerometer + Gyroscope anomaly detection |
+| 🛡️ **Guardian Mode** | Background intelligent safety watchdog |
+| 🚨 **Smart SOS** | 20-second confirmation before emergency dispatch |
+| 👥 **Trusted Contacts** | Live location sharing with emergency contacts |
+| 🌦️ **Risk Intelligence** | Weather, route & environmental safety analysis |
 
 ---
 
-## 📂 Project Structure
+# 🧠 AI Safety Pipeline
+
+```text
+      GPS Tracking
+           │
+           ▼
+   Route Watchdog
+           │
+           ▼
+ Voice Distress AI
+           │
+           ▼
+ Motion Sensors
+           │
+           ▼
+   AI Risk Engine
+           │
+           ▼
+  Are You In Danger?
+     (20 Seconds)
+      │        │
+      ▼        ▼
+ I'm Safe   Send SOS
+                │
+                ▼
+ Trusted Contacts + Live Location
+```
+
+---
+
+# 📱 Application Flow
+
+```text
+Splash
+   │
+   ▼
+Authentication
+(Login / Google)
+   │
+   ▼
+Home Dashboard
+   │
+   ▼
+Safe Route Planning
+   │
+   ▼
+Journey Confirmation
+   │
+   ▼
+Live Journey
+   │
+   ▼
+Guardian Monitoring
+   │
+   ▼
+Emergency SOS
+```
+
+---
+
+# 🏗️ Architecture
+
+```text
+             Flutter Mobile App
+                    │
+        Riverpod + Material 3
+                    │
+          REST API (HTTPS)
+                    │
+              FastAPI Backend
+        ┌───────────┼───────────┐
+        │           │           │
+ PostgreSQL      Redis      Gemini AI
+        │           │           │
+        └──── Google Maps ──────┘
+                    │
+              Twilio + FCM
+```
+
+---
+
+# 📂 Project Structure
 
 ```text
 guardian-ai/
+│
 ├── backend/
 │   ├── app/
 │   ├── alembic/
 │   ├── Dockerfile
-│   └── requirements.txt
+│   ├── requirements.txt
+│   └── docker-compose.yml
 │
 ├── lib/
 │   ├── core/
@@ -129,16 +152,16 @@ guardian-ai/
 
 ---
 
-## ⚙️ Getting Started
+# 🚀 Getting Started
 
-### 1. Clone Repository
+## 1️⃣ Clone Repository
 
 ```bash
-git clone https://github.com/yourusername/guardian-ai.git
+git clone https://github.com/your-username/guardian-ai.git
 cd guardian-ai
 ```
 
-### 2. Backend Setup
+## 2️⃣ Backend Setup
 
 ```bash
 cd backend
@@ -146,13 +169,15 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-Backend runs at:
+Backend runs on:
 
 ```text
 http://localhost:8000
 ```
 
-### 3. Flutter Setup
+---
+
+## 3️⃣ Flutter Setup
 
 ```bash
 flutter pub get
@@ -164,27 +189,31 @@ Run on Android:
 flutter run --dart-define=API_HOST=192.168.1.6
 ```
 
-For production:
+Production:
 
 ```bash
 flutter build apk --release \
---dart-define=API_BASE_URL=https://api.yourdomain.com/api/v1
+--dart-define=API_BASE_URL=https://api.guardianai.com/api/v1
 ```
 
 ---
 
-## 🔐 Environment Variables
+# 🔐 Environment Variables
 
-Create a `.env` inside `backend/`:
+Create `backend/.env`
 
 ```env
 DATABASE_URL=
 REDIS_URL=
+
 JWT_SECRET=
+
 GOOGLE_CLIENT_ID=
 GOOGLE_MAPS_API_KEY=
 GEMINI_API_KEY=
+
 WEATHER_API_KEY=
+
 TWILIO_ACCOUNT_SID=
 TWILIO_AUTH_TOKEN=
 TWILIO_PHONE_NUMBER=
@@ -192,32 +221,26 @@ TWILIO_PHONE_NUMBER=
 
 ---
 
-## 🧠 Safety Pipeline
+# 🛠️ Technology Stack
 
-```text
-GPS + Motion + Voice + Route + Weather
-                 │
-                 ▼
-        AI Risk Assessment
-                 │
-                 ▼
-     Are You In Danger?
-       (20 sec countdown)
-        │             │
-        ▼             ▼
-   I'm Safe      Send SOS
-                      │
-                      ▼
-        Trusted Contacts + Live Location
-```
+| Category | Technologies |
+|----------|--------------|
+| **Frontend** | Flutter, Dart, Riverpod, Material 3 |
+| **Backend** | FastAPI, SQLAlchemy, JWT |
+| **Database** | PostgreSQL, Redis |
+| **AI** | Google Gemini |
+| **Maps** | Google Maps & Directions API |
+| **Sensors** | Geolocator, Sensors Plus, Speech-to-Text |
+| **Notifications** | Firebase Cloud Messaging |
+| **Emergency** | Twilio SMS |
 
 ---
 
-## 🎯 Roadmap
+# 🎯 Roadmap
 
 - [x] JWT Authentication
 - [x] Google Authentication
-- [x] Real GPS Tracking
+- [x] Live GPS Tracking
 - [x] Smart Route Planning
 - [x] Guardian Mode
 - [x] Motion Detection
@@ -226,18 +249,28 @@ GPS + Motion + Voice + Route + Weather
 - [x] Intelligent SOS
 - [ ] Offline Emergency Sync
 - [ ] Wear OS Companion
-- [ ] AI Safety Insights
+- [ ] AI Predictive Safety Insights
 
 ---
 
-## 👨‍💻 Developed By
+# 👨‍💻 Developer
 
-**Roshan**  
-CSE Student • Flutter • FastAPI • AI Systems
+<div align="center">
+
+## Roshan
+
+**Computer Science Engineering • Flutter • FastAPI • AI Systems**
+
+*Building intelligent technology for real-world safety.*
+
+</div>
 
 ---
 
-## 📄 License
+<div align="center">
 
-This project is licensed under the **MIT License**.
-````
+### ⭐ If you like this project, consider giving it a Star!
+
+**Guardian AI © 2026**
+
+</div>
