@@ -16,6 +16,8 @@ import '../../../core/widgets/dialogs.dart';
 import '../../../core/widgets/feature_cards.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../../../domain/entities/entities.dart';
+import '../../../providers/repository_providers.dart';
+import '../../guardian/presentation/guardian_controller.dart';
 import 'profile_controller.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -43,7 +45,7 @@ class ProfileScreen extends ConsumerWidget {
   }
 }
 
-class _ProfileBody extends StatelessWidget {
+class _ProfileBody extends ConsumerWidget {
   const _ProfileBody({
     required this.user,
     required this.ui,
@@ -55,7 +57,8 @@ class _ProfileBody extends StatelessWidget {
   final ProfileController controller;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isGuardianActive = ref.watch(guardianActiveStateProvider);
     return SafeArea(
       child: ResponsivePadding(
         child: SingleChildScrollView(
@@ -202,12 +205,15 @@ class _ProfileBody extends StatelessWidget {
                 child: Column(
                   children: [
                     _PrefTile(
-                      icon: AppIcons.shield,
+                      icon: isGuardianActive ? AppIcons.shieldFilled : AppIcons.shield,
                       title: 'Guardian Mode',
-                      subtitle: 'AI-powered active monitoring',
+                      subtitle: isGuardianActive
+                          ? 'Active — AI shield monitoring device sensors'
+                          : 'Standby — Tap to turn on protection',
                       trailing: Switch(
-                        value: ui.guardianEnabled,
-                        onChanged: controller.setGuardianEnabled,
+                        value: isGuardianActive,
+                        activeThumbColor: AppColors.tertiary,
+                        onChanged: (val) => ref.read(guardianControllerProvider.notifier).toggle(val),
                       ),
                     ),
                     const Divider(height: 1, color: AppColors.glassBorder),

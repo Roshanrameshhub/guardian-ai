@@ -16,48 +16,60 @@ Future<T?> showAppBottomSheet<T>({
     backgroundColor: Colors.transparent,
     isScrollControlled: true,
     builder: (context) {
+      final viewInsets = MediaQuery.viewInsetsOf(context);
+      final screenHeight = MediaQuery.sizeOf(context).height;
+
       return Padding(
         padding: EdgeInsets.fromLTRB(
           AppSpacing.gutter,
           0,
           AppSpacing.gutter,
-          MediaQuery.paddingOf(context).bottom + AppSpacing.floatingOffset,
+          viewInsets.bottom + MediaQuery.paddingOf(context).bottom + AppSpacing.floatingOffset,
         ),
-        child: Container(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          decoration: BoxDecoration(
-            color: AppColors.surfaceContainer.withValues(alpha: 0.95),
-            borderRadius: AppRadius.borderXxl,
-            border: Border.all(color: AppColors.glassBorder),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.black.withValues(alpha: 0.4),
-                blurRadius: 40,
-                offset: const Offset(0, 20),
-              ),
-            ],
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: screenHeight * 0.85,
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: const BoxDecoration(
-                    color: AppColors.outlineVariant,
-                    borderRadius: AppRadius.borderFull,
+          child: Container(
+            padding: const EdgeInsets.all(AppSpacing.xl),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceContainer.withValues(alpha: 0.95),
+              borderRadius: AppRadius.borderXxl,
+              border: Border.all(color: AppColors.glassBorder),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.black.withValues(alpha: 0.4),
+                  blurRadius: 40,
+                  offset: const Offset(0, 20),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: const BoxDecoration(
+                      color: AppColors.outlineVariant,
+                      borderRadius: AppRadius.borderFull,
+                    ),
                   ),
                 ),
-              ),
-              if (title != null) ...[
+                if (title != null) ...[
+                  const SizedBox(height: AppSpacing.lg),
+                  Text(title, style: AppTextStyles.headlineMd.copyWith(fontSize: 20)),
+                ],
                 const SizedBox(height: AppSpacing.lg),
-                Text(title, style: AppTextStyles.headlineMd.copyWith(fontSize: 20)),
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: child,
+                  ),
+                ),
               ],
-              const SizedBox(height: AppSpacing.lg),
-              child,
-            ],
+            ),
           ),
         ),
       );

@@ -20,6 +20,8 @@ import '../../../core/widgets/progress_ring.dart';
 import '../../../core/widgets/sos_dialog.dart';
 import '../../../core/widgets/status_chip.dart';
 import '../../../domain/entities/entities.dart';
+import '../../../providers/repository_providers.dart';
+import '../../guardian/presentation/guardian_controller.dart';
 import 'home_controller.dart';
 import 'widgets/home_header.dart';
 import 'widgets/nearby_services_card.dart';
@@ -28,7 +30,6 @@ import 'widgets/trusted_contacts_row.dart';
 import 'dart:async';
 import '../../../core/theme/radius.dart';
 import '../../../core/widgets/safety_confirmation_dialog.dart';
-import '../../../providers/repository_providers.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -286,26 +287,41 @@ class _HomeBody extends ConsumerWidget {
 
             const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
             SliverToBoxAdapter(
-              child: GlassCard(
-                child: Row(
-                  children: [
-                    const IconBadge(icon: AppIcons.shieldFilled),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Guardian Mode', style: AppTextStyles.bodyMd.copyWith(fontWeight: FontWeight.w700)),
-                          Text(data.guardianSubtitle, style: AppTextStyles.labelSm),
-                        ],
-                      ),
+              child: Builder(
+                builder: (context) {
+                  final isGuardianActive = ref.watch(guardianActiveStateProvider);
+                  return GlassCard(
+                    child: Row(
+                      children: [
+                        IconBadge(
+                          icon: AppIcons.shieldFilled,
+                          color: isGuardianActive ? AppColors.tertiary : AppColors.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Guardian Mode', style: AppTextStyles.bodyMd.copyWith(fontWeight: FontWeight.w700)),
+                              Text(
+                                isGuardianActive ? 'AI Shield Active' : 'Guardian Mode Standby (Turn ON)',
+                                style: AppTextStyles.labelSm.copyWith(
+                                  color: isGuardianActive ? AppColors.tertiary : AppColors.onSurfaceVariant,
+                                  fontWeight: isGuardianActive ? FontWeight.w600 : FontWeight.normal,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Switch(
+                          value: isGuardianActive,
+                          activeThumbColor: AppColors.tertiary,
+                          onChanged: (val) => ref.read(guardianControllerProvider.notifier).toggle(val),
+                        ),
+                      ],
                     ),
-                    Switch(
-                      value: data.guardianModeActive,
-                      onChanged: controller.toggleGuardian,
-                    ),
-                  ],
-                ),
+                  );
+                },
               ),
             ),
 

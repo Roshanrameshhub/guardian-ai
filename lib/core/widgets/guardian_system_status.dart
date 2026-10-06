@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/network/api_client.dart';
 import '../../core/services/voice_service.dart';
-import '../../features/guardian/presentation/guardian_controller.dart';
 import '../../providers/repository_providers.dart';
 import '../theme/app_colors.dart';
 import '../theme/radius.dart';
@@ -97,12 +96,11 @@ class GuardianSystemStatus extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final guardianStatus = ref.watch(guardianStatusProvider);
     final engine = ref.watch(guardianEngineProvider);
     final sensorService = engine.sensorService;
     final voiceService = engine.voiceService;
 
-    final isGuardianActive = engine.isActive || (guardianStatus.value?.isActive ?? false);
+    final isGuardianActive = ref.watch(guardianActiveStateProvider);
 
     // 1. GPS Status
     final hasGpsFix = engine.currentPosition != null;

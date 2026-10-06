@@ -8,9 +8,12 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../data/dto/api_dto.dart';
 import '../../domain/entities/entities.dart';
 import '../../domain/repositories/repositories.dart';
+import '../config/app_router.dart';
 import '../utils/dev_log.dart';
+import '../widgets/safety_confirmation_dialog.dart';
 import '../widgets/sos_dialog.dart';
 import 'background_safety_service.dart';
+import 'guardian_risk_engine.dart';
 import 'location_service.dart';
 import 'route_deviation_detector.dart';
 import 'sensor_service.dart';
@@ -19,7 +22,7 @@ import 'voice_service.dart';
 
 /// Real-time engine orchestrating Guardian Mode background timers, GPS streams,
 /// battery reporting, sensor processing, voice listening, and live safety events.
-class GuardianEngine with WidgetsBindingObserver {
+class GuardianEngine with WidgetsBindingObserver, ChangeNotifier {
   GuardianEngine({
     required GuardianRepository guardianRepository,
     required JourneyRepository journeyRepository,
@@ -74,6 +77,10 @@ class GuardianEngine with WidgetsBindingObserver {
   final StreamController<SafetyEventModel> _eventStreamController =
       StreamController<SafetyEventModel>.broadcast();
 
+  final GuardianRiskEngine _riskEngine = const GuardianRiskEngine();
+  final Map<String, RiskFactorExplanation> _accumulatedSignals = {};
+  final Map<String, DateTime> _signalCooldowns = {};
+
   bool get isActive => _isActive;
   int get heartbeatIntervalSeconds => _heartbeatIntervalSeconds;
   Position? get currentPosition => _currentPosition;
@@ -83,6 +90,20 @@ class GuardianEngine with WidgetsBindingObserver {
   String? get activeJourneyId => _activeJourneyId;
   List<SafetyEventModel> get events => List.unmodifiable(_events);
   Stream<SafetyEventModel> get safetyEventStream => _eventStreamController.stream;
+
+  List<RiskFactorExplanation> get accumulatedSignals => _accumulatedSignals.values.toList();
+
+  RiskAssessmentReport get currentRiskReport {
+    if (!_isActive) {
+      return RiskAssessmentReport.baseline();
+    }
+    return _riskEngine.evaluateRisk(
+      currentTime: DateTime.now(),
+      batteryPercent: _batteryPercent,
+      stationarySeconds: _stationarySeconds,
+      accumulatedFactors: _accumulatedSignals.values.toList(),
+    );
+  }
 
   SensorService get sensorService => _sensorService;
   VoiceService get voiceService => _voiceService;
@@ -121,6 +142,8 @@ class GuardianEngine with WidgetsBindingObserver {
       );
     }
     _isActive = true;
+    resetRiskAccumulator();
+    notifyListeners();
 
     // 2. Log initial event
     logEvent(
@@ -174,11 +197,13 @@ class GuardianEngine with WidgetsBindingObserver {
             LatLng(pos.latitude, pos.longitude),
           );
           if (devReport.isSustained) {
-            logEvent(
-              type: SafetyEventType.routeDeviation,
-              severity: SafetyEventSeverity.warning,
+            handleAnomalySignal(
+              signalType: 'route_deviation',
               title: 'Route Deviation Warning',
               message: 'You are ${devReport.currentDistanceMeters.toStringAsFixed(0)}m off your planned route. Everything okay?',
+              points: 20,
+              factorName: 'Route Deviation',
+              factorDescription: 'Off safe route corridor by ${devReport.currentDistanceMeters.toStringAsFixed(0)}m',
             );
           }
         }
@@ -213,25 +238,31 @@ class GuardianEngine with WidgetsBindingObserver {
     _sensorSubscription?.cancel();
     _sensorSubscription = _sensorService.anomalyStream.listen((anomaly) {
       if (anomaly == MotionEventType.fallDetected) {
-        logEvent(
-          type: SafetyEventType.fallDetected,
-          severity: SafetyEventSeverity.critical,
+        handleAnomalySignal(
+          signalType: 'fall',
           title: '⚠ POSSIBLE FALL DETECTED',
           message: 'Multi-stage fall signature detected with post-impact stillness.',
+          points: 20,
+          factorName: 'Fall Detected',
+          factorDescription: 'Impact spike & post-fall stillness confirmed',
         );
       } else if (anomaly == MotionEventType.phoneDrop) {
-        logEvent(
-          type: SafetyEventType.phoneDrop,
-          severity: SafetyEventSeverity.warning,
+        handleAnomalySignal(
+          signalType: 'drop',
           title: '⚠ POSSIBLE DROP DETECTED',
           message: 'Freefall impact spike recorded by accelerometer.',
+          points: 15,
+          factorName: 'Drop Impact',
+          factorDescription: 'Freefall impact spike recorded',
         );
       } else {
-        logEvent(
-          type: SafetyEventType.shakeDetected,
-          severity: SafetyEventSeverity.warning,
+        handleAnomalySignal(
+          signalType: 'shake',
           title: '⚠ UNUSUAL MOVEMENT DETECTED',
           message: 'High acceleration shake peak recorded by accelerometer.',
+          points: 15,
+          factorName: 'Unusual Motion',
+          factorDescription: 'High acceleration shake peak recorded',
         );
       }
     });
@@ -240,11 +271,13 @@ class GuardianEngine with WidgetsBindingObserver {
     _voiceService.startListening(journeyId: journeyId);
     _voiceSubscription?.cancel();
     _voiceSubscription = _voiceService.emergencyTriggerStream.listen((phrase) {
-      logEvent(
-        type: SafetyEventType.voiceDistress,
-        severity: SafetyEventSeverity.critical,
+      handleAnomalySignal(
+        signalType: 'voice_distress',
         title: '⚠ POSSIBLE DISTRESS',
         message: '"$phrase" detected.',
+        points: 25,
+        factorName: 'Voice Distress',
+        factorDescription: 'Emergency distress keyword "$phrase" detected',
       );
     });
 
@@ -294,6 +327,8 @@ class GuardianEngine with WidgetsBindingObserver {
   Future<GuardianStatusEntity> stopGuardian() async {
     DevLog.guardian('Stopping Guardian Engine session...');
     _isActive = false;
+    resetRiskAccumulator();
+    notifyListeners();
 
     await _bgService.stopForegroundService();
 
@@ -375,6 +410,168 @@ class GuardianEngine with WidgetsBindingObserver {
         batteryLevel: _batteryPercent,
       );
     }
+  }
+
+  /// Process an unusual sensor/route/voice event through the false-positive
+  /// 30-second verification window before committing risk points to the engine.
+  void handleAnomalySignal({
+    required String signalType,
+    required String title,
+    required String message,
+    required int points,
+    required String factorName,
+    required String factorDescription,
+  }) {
+    if (!_isActive) return;
+
+    // 30-second cooldown per signal type to debounce and prevent double-counting
+    final lastTime = _signalCooldowns[signalType];
+    final now = DateTime.now();
+    if (lastTime != null && now.difference(lastTime).inSeconds < 30) {
+      DevLog.guardian('[DEBOUNCE] Signal $signalType suppressed by 30s cooldown');
+      return;
+    }
+    _signalCooldowns[signalType] = now;
+
+    // If this signal is already confirmed and active in the current session, do not duplicate
+    if (_accumulatedSignals.containsKey(signalType)) {
+      DevLog.guardian('[ACCUMULATOR] Signal $signalType already active in current session');
+      return;
+    }
+
+    // Log to safety audit stream
+    logEvent(
+      type: _mapSignalToEventType(signalType),
+      severity: points >= 20 ? SafetyEventSeverity.critical : SafetyEventSeverity.warning,
+      title: title,
+      message: message,
+    );
+
+    // Trigger 30-second verification prompt: [ I'M SAFE ] vs [ SEND SOS ]
+    showSafetyConfirmationDialog(
+      context: rootNavigatorKey.currentContext,
+      title: 'Potential emergency detected',
+      subtitle: 'Do you need help?',
+      triggerSource: signalType,
+      riskScore: currentRiskReport.overallRiskPercent,
+      signals: [
+        title,
+        message,
+        'Risk increment if unconfirmed: +$points%',
+      ],
+      onSafeConfirmed: () {
+        DevLog.guardian('[CONFIRMATION] User verified I\'M SAFE for $signalType. Cancellation recorded, 0 risk added.');
+      },
+      onSendSos: () {
+        DevLog.sos('[CONFIRMATION] User requested immediate SOS from $signalType modal.');
+        showEmergencySosModal(triggerSource: 'user_sos_$signalType');
+      },
+      onCountdownExpired: () {
+        DevLog.guardian('[CONFIRMATION] 30s countdown expired for $signalType without cancellation. Committing +$points% risk.');
+        commitRiskSignal(
+          signalType: signalType,
+          points: points,
+          factorName: factorName,
+          factorDescription: factorDescription,
+        );
+      },
+    );
+  }
+
+  /// Commits confirmed risk contribution to the engine and evaluates escalation threshold (>= 80% SOS).
+  void commitRiskSignal({
+    required String signalType,
+    required int points,
+    required String factorName,
+    required String factorDescription,
+  }) {
+    _accumulatedSignals[signalType] = RiskFactorExplanation(
+      name: factorName,
+      percentageContribution: points,
+      description: '$factorDescription (+$points%)',
+    );
+    notifyListeners();
+
+    final report = currentRiskReport;
+    setHeartbeatIntervalForRisk(report.overallRiskPercent);
+    DevLog.guardian('[RISK_ACCUMULATED] Total risk is now ${report.overallRiskPercent}% (${report.categoryLabel})');
+
+    // Trigger automatic SOS if total risk crosses critical threshold (>= 80%)
+    if (report.overallRiskPercent >= 80) {
+      DevLog.sos('[AUTO_SOS_THRESHOLD] Fused risk reached ${report.overallRiskPercent}% >= 80% threshold! Launching SOS.');
+      showEmergencySosModal(triggerSource: 'auto_risk_threshold_$signalType');
+    }
+  }
+
+  /// Reset accumulated risks and cooldowns on start or stop
+  void resetRiskAccumulator() {
+    _accumulatedSignals.clear();
+    _signalCooldowns.clear();
+    notifyListeners();
+  }
+
+  SafetyEventType _mapSignalToEventType(String signalType) {
+    switch (signalType) {
+      case 'fall':
+        return SafetyEventType.fallDetected;
+      case 'drop':
+        return SafetyEventType.phoneDrop;
+      case 'shake':
+        return SafetyEventType.shakeDetected;
+      case 'voice_distress':
+        return SafetyEventType.voiceDistress;
+      case 'route_deviation':
+        return SafetyEventType.routeDeviation;
+      case 'stationary':
+        return SafetyEventType.prolongedStop;
+      default:
+        return SafetyEventType.shakeDetected;
+    }
+  }
+
+  // Workbench test trigger helpers
+  void testTriggerShake() {
+    handleAnomalySignal(
+      signalType: 'shake',
+      title: '⚠ UNUSUAL MOVEMENT DETECTED',
+      message: 'High acceleration shake peak recorded (TEST EVENT).',
+      points: 15,
+      factorName: 'Unusual Motion',
+      factorDescription: 'High acceleration shake peak recorded',
+    );
+  }
+
+  void testTriggerFall() {
+    handleAnomalySignal(
+      signalType: 'fall',
+      title: '⚠ POSSIBLE FALL DETECTED',
+      message: 'Multi-stage fall signature detected (TEST EVENT).',
+      points: 20,
+      factorName: 'Fall Detected',
+      factorDescription: 'Impact spike & post-fall stillness confirmed',
+    );
+  }
+
+  void testTriggerVoice([String phrase = 'HELP']) {
+    handleAnomalySignal(
+      signalType: 'voice_distress',
+      title: '⚠ POSSIBLE DISTRESS',
+      message: '"$phrase" detected (TEST EVENT).',
+      points: 25,
+      factorName: 'Voice Distress',
+      factorDescription: 'Emergency distress keyword "$phrase" detected',
+    );
+  }
+
+  void testTriggerRouteDeviation([double meters = 80.0]) {
+    handleAnomalySignal(
+      signalType: 'route_deviation',
+      title: 'Route Deviation Warning',
+      message: 'You are ${meters.toStringAsFixed(0)}m off planned route (TEST EVENT).',
+      points: 20,
+      factorName: 'Route Deviation',
+      factorDescription: 'Off safe route corridor by ${meters.toStringAsFixed(0)}m',
+    );
   }
 
 
@@ -480,6 +677,7 @@ class GuardianEngine with WidgetsBindingObserver {
     }
   }
 
+  @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _heartbeatTimer?.cancel();
@@ -488,5 +686,6 @@ class GuardianEngine with WidgetsBindingObserver {
     _voiceSubscription?.cancel();
     _sensorService.stopMonitoring();
     _voiceService.stopListening();
+    super.dispose();
   }
 }

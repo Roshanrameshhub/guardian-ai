@@ -10,9 +10,12 @@ import '../theme/radius.dart';
 import '../theme/spacing.dart';
 import '../theme/text_styles.dart';
 
+import '../config/app_router.dart';
 import 'app_button.dart';
 import 'glass_card.dart';
 import 'sos_dialog.dart';
+
+bool _isSafetyModalOpen = false;
 
 /// Shows an urgent 30-second safety verification prompt.
 ///
@@ -22,20 +25,27 @@ import 'sos_dialog.dart';
 /// - Route deviation (moving off-course from planned safe route)
 /// - High multi-signal fused risk
 ///
-/// If the user taps "GET HELP" or the 30-second timer expires with no response,
-/// it immediately escalates to the official SOS emergency pipeline.
+/// If the user taps "SEND SOS" or the 30-second timer expires without user confirmation,
+/// it commits the event's risk contribution and only triggers SOS if the risk threshold is reached.
 Future<void> showSafetyConfirmationDialog({
-  required BuildContext context,
-  required WidgetRef ref,
+  BuildContext? context,
+  WidgetRef? ref,
   String title = 'Potential emergency detected',
-  String subtitle = 'Are you okay?',
+  String subtitle = 'Do you need help?',
   required String triggerSource,
   int? riskScore,
   List<String>? signals,
   VoidCallback? onSafeConfirmed,
+  VoidCallback? onCountdownExpired,
+  VoidCallback? onSendSos,
 }) {
+  if (_isSafetyModalOpen) return Future.value();
+  final targetContext = context ?? rootNavigatorKey.currentContext;
+  if (targetContext == null) return Future.value();
+  _isSafetyModalOpen = true;
+
   return showModalBottomSheet(
-    context: context,
+    context: targetContext,
     isDismissible: false,
     enableDrag: false,
     isScrollControlled: true,
@@ -48,28 +58,36 @@ Future<void> showSafetyConfirmationDialog({
       riskScore: riskScore,
       signals: signals,
       onSafeConfirmed: onSafeConfirmed,
+      onCountdownExpired: onCountdownExpired,
+      onSendSos: onSendSos,
     ),
-  );
+  ).whenComplete(() {
+    _isSafetyModalOpen = false;
+  });
 }
 
 class _SafetyConfirmationSheet extends StatefulWidget {
   const _SafetyConfirmationSheet({
-    required this.ref,
+    this.ref,
     required this.title,
     required this.subtitle,
     required this.triggerSource,
     this.riskScore,
     this.signals,
     this.onSafeConfirmed,
+    this.onCountdownExpired,
+    this.onSendSos,
   });
 
-  final WidgetRef ref;
+  final WidgetRef? ref;
   final String title;
   final String subtitle;
   final String triggerSource;
   final int? riskScore;
   final List<String>? signals;
   final VoidCallback? onSafeConfirmed;
+  final VoidCallback? onCountdownExpired;
+  final VoidCallback? onSendSos;
 
   @override
   State<_SafetyConfirmationSheet> createState() => _SafetyConfirmationSheetState();
@@ -105,37 +123,39 @@ class _SafetyConfirmationSheetState extends State<_SafetyConfirmationSheet> {
 
   Future<void> _onSafe() async {
     _timer?.cancel();
-    DevLog.log('CONFIRMATION', '[VOICE] user marked safe');
+    DevLog.log('CONFIRMATION', '[SAFETY] user marked safe (source: ${widget.triggerSource})');
 
     // Resume voice listening if Guardian Mode is active
-    final voiceService = widget.ref.read(voiceServiceProvider);
-    if (voiceService.isMonitoring) {
-      voiceService.resumeListening();
+    if (widget.ref != null) {
+      final voiceService = widget.ref!.read(voiceServiceProvider);
+      if (voiceService.isMonitoring) {
+        voiceService.resumeListening();
+      }
+
+      // Record user false alarm cancellation and adjust ML sensitivity
+      final falseAlarmManager = widget.ref!.read(falseAlarmManagerProvider);
+      await falseAlarmManager.recordCancellation(
+        triggerSource: widget.triggerSource,
+      );
+
+      // Apply calibrated multiplier to FallDetector if active
+      final sensorService = widget.ref!.read(sensorServiceProvider);
+      sensorService.fallDetector.sensitivityMultiplier = falseAlarmManager.fallSensitivityMultiplier;
     }
-
-    if (widget.onSafeConfirmed != null) {
-      widget.onSafeConfirmed!();
-    }
-
-    // Record user false alarm cancellation and adjust ML sensitivity
-    final falseAlarmManager = widget.ref.read(falseAlarmManagerProvider);
-    final result = await falseAlarmManager.recordCancellation(
-      triggerSource: widget.triggerSource,
-    );
-
-    // Apply calibrated multiplier to FallDetector if active
-    final sensorService = widget.ref.read(sensorServiceProvider);
-    sensorService.fallDetector.sensitivityMultiplier = falseAlarmManager.fallSensitivityMultiplier;
 
     if (mounted) {
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result.message),
+        const SnackBar(
+          content: Text('Verification cancelled. Resuming normal Guardian monitoring.'),
           backgroundColor: AppColors.success,
-          duration: const Duration(seconds: 3),
+          duration: Duration(seconds: 3),
         ),
       );
+    }
+
+    if (widget.onSafeConfirmed != null) {
+      widget.onSafeConfirmed!();
     }
   }
 
@@ -143,10 +163,15 @@ class _SafetyConfirmationSheetState extends State<_SafetyConfirmationSheet> {
     if (_isEscalated) return;
     _isEscalated = true;
     _timer?.cancel();
-    DevLog.log('CONFIRMATION', '[VOICE] SOS requested by user');
+    DevLog.log('CONFIRMATION', '[SAFETY] SOS requested by user (source: ${widget.triggerSource})');
 
     if (mounted) {
       Navigator.of(context).pop();
+    }
+
+    if (widget.onSendSos != null) {
+      widget.onSendSos!();
+    } else {
       showEmergencySosModal(
         context: context,
         ref: widget.ref,
@@ -159,14 +184,19 @@ class _SafetyConfirmationSheetState extends State<_SafetyConfirmationSheet> {
     if (_isEscalated) return;
     _isEscalated = true;
     _timer?.cancel();
-    DevLog.log('CONFIRMATION', '[VOICE] countdown expired without response - escalating to emergency SOS');
-
-    // Pass through SOS escalation engine
-    final sosEngine = widget.ref.read(sosEscalationEngineProvider);
-    sosEngine.evaluateSignals(unansweredCriticalPrompt: true);
+    DevLog.log('CONFIRMATION', '[SAFETY] countdown expired without response (source: ${widget.triggerSource})');
 
     if (mounted) {
       Navigator.of(context).pop();
+    }
+
+    if (widget.onCountdownExpired != null) {
+      widget.onCountdownExpired!();
+    } else {
+      if (widget.ref != null) {
+        final sosEngine = widget.ref!.read(sosEscalationEngineProvider);
+        sosEngine.evaluateSignals(unansweredCriticalPrompt: true);
+      }
       showEmergencySosModal(
         context: context,
         ref: widget.ref,
@@ -364,8 +394,9 @@ class _SafetyConfirmationSheetState extends State<_SafetyConfirmationSheet> {
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: AppButton(
-                    label: 'GET HELP',
+                    label: 'SEND SOS',
                     icon: AppIcons.sos,
+                    variant: AppButtonVariant.primary,
                     onPressed: _triggerEmergencySos,
                   ),
                 ),

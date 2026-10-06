@@ -222,8 +222,10 @@ class _ContactCard extends ConsumerWidget {
               CircleAvatar(
                 radius: 26,
                 backgroundColor: AppColors.surfaceContainerHighest,
-                backgroundImage: contact.avatarUrl.isNotEmpty ? NetworkImage(contact.avatarUrl) : null,
-                child: contact.avatarUrl.isEmpty
+                backgroundImage: (contact.avatarUrl.isNotEmpty && contact.avatarUrl.startsWith('http'))
+                    ? NetworkImage(contact.avatarUrl)
+                    : null,
+                child: (contact.avatarUrl.isEmpty || !contact.avatarUrl.startsWith('http'))
                     ? Text(
                         contact.name.isNotEmpty ? contact.name[0].toUpperCase() : '?',
                         style: AppTextStyles.headlineMd.copyWith(color: AppColors.primaryPulse, fontSize: 18),
@@ -798,16 +800,29 @@ class _ContactFormState extends ConsumerState<_ContactForm> {
                     children: [
                       Icon(Icons.telegram, color: hasTelegram ? Colors.blue : AppColors.outline, size: 20),
                       const SizedBox(width: 8),
-                      Text(
-                        'Telegram Emergency Alerts',
-                        style: AppTextStyles.bodyMd.copyWith(fontWeight: FontWeight.w700),
+                      Expanded(
+                        child: Text(
+                          'Telegram Emergency Alerts',
+                          style: AppTextStyles.bodyMd.copyWith(fontWeight: FontWeight.w700),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                      const Spacer(),
-                      Text(
-                        hasTelegram ? '🟢 Connected' : '⚪ Not Connected',
-                        style: AppTextStyles.labelSm.copyWith(
-                          color: hasTelegram ? AppColors.tertiary : AppColors.onSurfaceVariant,
-                          fontWeight: FontWeight.w600,
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: hasTelegram
+                              ? AppColors.tertiary.withValues(alpha: 0.15)
+                              : AppColors.surfaceContainerHigh,
+                          borderRadius: AppRadius.borderFull,
+                        ),
+                        child: Text(
+                          hasTelegram ? 'Connected' : 'Not Connected',
+                          style: AppTextStyles.labelSm.copyWith(
+                            color: hasTelegram ? AppColors.tertiary : AppColors.onSurfaceVariant,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 11,
+                          ),
                         ),
                       ),
                     ],

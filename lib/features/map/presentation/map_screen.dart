@@ -512,12 +512,16 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                               child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryPulse),
                             ),
                             const SizedBox(width: 8),
-                            Text(
-                              'Evaluating safe routes with real-time risk avoidance...',
-                              style: AppTextStyles.labelSm.copyWith(
-                                color: AppColors.primaryPulse,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 11,
+                            Flexible(
+                              child: Text(
+                                'Evaluating safe routes with real-time risk avoidance...',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTextStyles.labelSm.copyWith(
+                                  color: AppColors.primaryPulse,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 11,
+                                ),
                               ),
                             ),
                           ],
@@ -622,16 +626,18 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             // Bottom Sheets / Route Comparison Card / Detail Sheets
             Align(
               alignment: Alignment.bottomCenter,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.gutter,
-                  0,
-                  AppSpacing.gutter,
-                  AppSpacing.md,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
+              child: SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.gutter,
+                    0,
+                    AppSpacing.gutter,
+                    AppSpacing.md,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
                     // If a POI is Selected
                     if (state.selectedPoi != null) ...[
                       _PoiDetailCard(
@@ -738,6 +744,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 ),
               ),
             ),
+          ),
 
             // Loading overlay
             if (state.isLoading)

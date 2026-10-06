@@ -105,7 +105,7 @@ final backgroundSafetyServiceProvider = Provider<BackgroundSafetyService>((ref) 
   return service;
 });
 
-final guardianEngineProvider = Provider<GuardianEngine>((ref) {
+final guardianEngineProvider = ChangeNotifierProvider<GuardianEngine>((ref) {
   final engine = GuardianEngine(
     guardianRepository: ref.watch(guardianRepositoryProvider),
     journeyRepository: ref.watch(journeyRepositoryProvider),
@@ -117,8 +117,12 @@ final guardianEngineProvider = Provider<GuardianEngine>((ref) {
     routeDeviationDetector: ref.watch(routeDeviationDetectorProvider),
     stationaryDetector: ref.watch(stationaryDetectorProvider),
   );
-  ref.onDispose(engine.dispose);
   return engine;
+});
+
+final guardianActiveStateProvider = Provider<bool>((ref) {
+  final engine = ref.watch(guardianEngineProvider);
+  return engine.isActive;
 });
 
 final safetySensorManagerProvider = Provider<SafetySensorManager>((ref) {

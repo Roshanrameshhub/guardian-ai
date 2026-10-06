@@ -14,7 +14,6 @@ import '../../../core/theme/text_styles.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../../../core/widgets/guardian_system_status.dart';
-import '../../../core/widgets/safety_confirmation_dialog.dart';
 import '../../../core/widgets/sos_dialog.dart';
 import '../../../core/widgets/voice_monitoring_card.dart';
 import '../../../domain/entities/entities.dart';
@@ -42,44 +41,9 @@ class GuardianScreen extends ConsumerStatefulWidget {
 }
 
 class _GuardianScreenState extends ConsumerState<GuardianScreen> {
-  StreamSubscription<SafetyEventModel>? _eventSub;
-  bool _isAlertOpen = false;
-
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final engine = ref.read(guardianEngineProvider);
-      _eventSub = engine.safetyEventStream.listen((event) {
-        if (!mounted || _isAlertOpen) return;
-        if (event.severity == SafetyEventSeverity.critical || event.severity == SafetyEventSeverity.warning) {
-          _isAlertOpen = true;
-          final riskReport = ref.read(guardianRiskReportProvider);
-          showSafetyConfirmationDialog(
-            context: context,
-            ref: ref,
-            title: 'Potential emergency detected',
-            subtitle: 'Are you okay?',
-            riskScore: riskReport.overallRiskPercent,
-            signals: [
-              if (event.title.isNotEmpty) event.title,
-              if (event.message.isNotEmpty) event.message,
-              ...riskReport.factors.map((f) => '${f.name} (+${f.percentageContribution}%)'),
-            ],
-            triggerSource: event.type.name,
-            onSafeConfirmed: () {
-              _isAlertOpen = false;
-            },
-          );
-        }
-      });
-    });
-  }
-
-  @override
-  void dispose() {
-    _eventSub?.cancel();
-    super.dispose();
   }
 
   Future<void> _handleToggleGuardian(bool currentlyActive) async {
@@ -120,12 +84,11 @@ class _GuardianScreenState extends ConsumerState<GuardianScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {    final statusAsync = ref.watch(guardianStatusProvider);
+  Widget build(BuildContext context) {
     final engine = ref.watch(guardianEngineProvider);
     final riskReport = ref.watch(guardianRiskReportProvider);
     final mapState = ref.watch(guardianMapControllerProvider);
-
-    final isGuardianActive = engine.isActive || (statusAsync.value?.isActive ?? false);
+    final isGuardianActive = ref.watch(guardianActiveStateProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,

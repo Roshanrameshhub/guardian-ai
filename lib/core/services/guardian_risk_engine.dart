@@ -92,10 +92,17 @@ class GuardianRiskEngine {
     int batteryPercent = 100,
     String? weatherCondition, // 'Rain', 'Storm', 'Thunderstorm', 'Clear'
     String? roadName,
+    List<RiskFactorExplanation> accumulatedFactors = const [],
   }) {
     final now = currentTime ?? DateTime.now();
     final factors = <RiskFactorExplanation>[];
     int totalRisk = 0;
+
+    // Add stateful accumulated factors (confirmed anomaly events)
+    for (final factor in accumulatedFactors) {
+      factors.add(factor);
+      totalRisk += factor.percentageContribution;
+    }
 
     // 1. TIME OF DAY
     final hour = now.hour;
@@ -209,13 +216,13 @@ class GuardianRiskEngine {
     if (factors.isEmpty) {
       factors.add(const RiskFactorExplanation(
         name: 'Normal Baseline',
-        percentageContribution: 8,
-        description: 'Passive baseline monitoring (+8%)',
+        percentageContribution: 10,
+        description: 'Passive baseline monitoring (+10%)',
       ));
-      totalRisk = 8;
+      totalRisk = 10;
     }
 
-    final finalRiskPercent = totalRisk.clamp(5, 100);
+    final finalRiskPercent = totalRisk.clamp(10, 100);
 
     // Classify qualitative category
     RiskLevelCategory category;

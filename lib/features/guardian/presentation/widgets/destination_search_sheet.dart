@@ -230,13 +230,17 @@ class _DestinationSearchSheetState extends State<DestinationSearchSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final screenHeight = MediaQuery.of(context).size.height;
+
     return Container(
+      constraints: BoxConstraints(maxHeight: screenHeight * 0.85),
       decoration: BoxDecoration(
         color: AppColors.surfaceContainerHighest.withValues(alpha: 0.96),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
         border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.4)),
       ),
-      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.xl),
+      padding: EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.lg + bottomInset),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -252,16 +256,22 @@ class _DestinationSearchSheetState extends State<DestinationSearchSheet> {
             ),
           ),
           const SizedBox(height: AppSpacing.md),
-          Row(
-            children: [
-              Text('Where to safely navigate?', style: AppTextStyles.headlineMd),
-              const Spacer(),
-              IconButton(
-                icon: const Icon(Icons.close, color: AppColors.onSurfaceVariant),
-                onPressed: widget.onClose,
-              ),
-            ],
-          ),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Where to safely navigate?',
+                    style: AppTextStyles.headlineMd,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, color: AppColors.onSurfaceVariant),
+                  onPressed: widget.onClose,
+                ),
+              ],
+            ),
           const SizedBox(height: AppSpacing.md),
 
           // Travel Mode Toggle (Drive vs Walk)
@@ -343,8 +353,7 @@ class _DestinationSearchSheetState extends State<DestinationSearchSheet> {
           ),
           const SizedBox(height: AppSpacing.sm),
 
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: 280),
+          Flexible(
             child: _searchResults.isEmpty
                   ? Center(
                       child: Padding(
@@ -358,6 +367,7 @@ class _DestinationSearchSheetState extends State<DestinationSearchSheet> {
                     )
                 : ListView.separated(
                     shrinkWrap: true,
+                    physics: const ClampingScrollPhysics(),
                     itemCount: _searchResults.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 6),
                     itemBuilder: (context, idx) {

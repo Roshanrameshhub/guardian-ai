@@ -159,6 +159,9 @@ class AppAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool hasValidUrl = imageUrl.isNotEmpty &&
+        (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'));
+
     return Stack(
       clipBehavior: Clip.none,
       children: [
@@ -167,12 +170,22 @@ class AppAvatar extends StatelessWidget {
           height: size,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
+            color: AppColors.surfaceContainerHigh,
             border: Border.all(
               color: borderColor ?? AppColors.primary.withValues(alpha: 0.35),
               width: 1.5,
             ),
-            image: DecorationImage(image: NetworkImage(imageUrl), fit: BoxFit.cover),
+            image: hasValidUrl
+                ? DecorationImage(image: NetworkImage(imageUrl), fit: BoxFit.cover)
+                : null,
           ),
+          child: !hasValidUrl
+              ? Icon(
+                  Icons.person,
+                  size: size * 0.6,
+                  color: AppColors.onSurfaceVariant,
+                )
+              : null,
         ),
         if (showOnline)
           Positioned(

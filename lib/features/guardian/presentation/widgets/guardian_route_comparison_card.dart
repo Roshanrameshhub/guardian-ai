@@ -310,12 +310,16 @@ class GuardianRouteComparisonCard extends StatelessWidget {
                   elevation: 4,
                 ),
                 icon: const Icon(AppIcons.location),
-                label: Text(
-                  'START ${active.role.toUpperCase()}',
-                  style: AppTextStyles.labelLg.copyWith(
-                    color: AppColors.white,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.8,
+                label: Flexible(
+                  child: Text(
+                    'START ${active.role.toUpperCase()}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.labelLg.copyWith(
+                      color: AppColors.white,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.8,
+                    ),
                   ),
                 ),
                 onPressed: onStartNavigation,

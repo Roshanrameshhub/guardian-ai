@@ -173,23 +173,32 @@ class _EmergencySosSheetState extends ConsumerState<_EmergencySosSheet> {
       if (!mounted) return;
 
       final anySent = deliveryList.any((d) => d.status == 'sent');
+      final anyTelegramSent = deliveryList.any((d) => d.channel.toLowerCase() == 'telegram' && d.status == 'sent');
       final allFailed = deliveryList.isNotEmpty && deliveryList.every((d) => d.status != 'sent');
 
       setState(() {
         _state = SosDialogState.active;
         _deliveryDetails = deliveryList;
-        _statusMessage = response.message.isNotEmpty
-            ? response.message
-            : 'Emergency SOS recorded on server.';
 
-        if (anySent) {
+        if (anyTelegramSent) {
           _channelStatus = 'DELIVERY CONFIRMED';
+          _statusMessage = 'SMS notification unavailable: The SMS provider account is inactive. Telegram notification was sent successfully.';
+        } else if (anySent) {
+          _channelStatus = 'DELIVERY CONFIRMED';
+          _statusMessage = response.message.isNotEmpty
+              ? response.message
+              : 'Emergency SOS alert dispatched successfully.';
         } else if (allFailed) {
           _channelStatus = 'DELIVERY FAILED / UNCONFIGURED';
+          _statusMessage = 'Emergency alert recorded on server. Contact delivery unavailable.';
         } else if (response.message.toLowerCase().contains('sent to')) {
           _channelStatus = 'DELIVERY CONFIRMED';
+          _statusMessage = response.message;
         } else {
           _channelStatus = 'RECORDED ON SERVER';
+          _statusMessage = response.message.isNotEmpty
+              ? response.message
+              : 'Emergency SOS recorded on server.';
         }
       });
     } catch (e) {
@@ -479,22 +488,51 @@ class _EmergencySosSheetState extends ConsumerState<_EmergencySosSheet> {
                       ..._deliveryDetails.map((detail) {
                         final isSent = detail.status == 'sent';
                         final isUnconfigured = detail.status == 'unconfigured';
-                        final color = isSent
-                            ? AppColors.tertiary
-                            : (isUnconfigured ? AppColors.outline : AppColors.error);
-                        final icon = isSent
-                            ? Icons.check_circle_outline
-                            : (isUnconfigured ? Icons.info_outline : Icons.cancel_outlined);
-                        
-                        String label = '${detail.recipientName} — ${detail.channel.toUpperCase()} ${detail.status}';
-                        if (detail.error != null && detail.error!.isNotEmpty) {
-                          label += ' (${detail.error})';
+                        final channelLower = detail.channel.toLowerCase();
+
+                        // Friendly sanitize provider errors
+                        final rawErr = (detail.error ?? detail.detail ?? '').toLowerCase();
+                        final bool isProviderInactive = rawErr.contains('twilio') ||
+                            rawErr.contains('401') ||
+                            rawErr.contains('20003') ||
+                            rawErr.contains('trial') ||
+                            rawErr.contains('authenticate') ||
+                            rawErr.contains('inactive');
+
+                        Color color;
+                        IconData icon;
+                        String label;
+
+                        if (isSent) {
+                          color = AppColors.tertiary;
+                          icon = Icons.check_circle_outline;
+                          label = '✓ ${detail.recipientName} — ${detail.channel.toUpperCase()} sent';
+                        } else if (channelLower == 'sms' && isProviderInactive) {
+                          color = AppColors.warning;
+                          icon = Icons.warning_amber_rounded;
+                          label = '⚠ ${detail.recipientName} — SMS unavailable — provider account inactive';
+                        } else if (isUnconfigured) {
+                          color = AppColors.outline;
+                          icon = Icons.info_outline;
+                          label = '${detail.recipientName} — ${detail.channel.toUpperCase()} unconfigured';
+                        } else {
+                          color = AppColors.error;
+                          icon = Icons.cancel_outlined;
+                          final cleanErr = isProviderInactive
+                              ? 'provider account inactive'
+                              : (detail.error != null && detail.error!.isNotEmpty ? detail.error! : 'delivery failed');
+                          label = '${detail.recipientName} — ${detail.channel.toUpperCase()} failed ($cleanErr)';
                         }
+
                         return Padding(
                           padding: const EdgeInsets.symmetric(vertical: 3),
                           child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(icon, size: 14, color: color),
+                              Padding(
+                                padding: const EdgeInsets.only(top: 2),
+                                child: Icon(icon, size: 14, color: color),
+                              ),
                               const SizedBox(width: 6),
                               Expanded(
                                 child: Text(

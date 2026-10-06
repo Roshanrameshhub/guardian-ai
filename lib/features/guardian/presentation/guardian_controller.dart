@@ -8,28 +8,21 @@ import '../../../providers/repository_providers.dart';
 import '../../home/presentation/home_controller.dart';
 
 final guardianRiskReportProvider = Provider<RiskAssessmentReport>((ref) {
-  final riskEngine = ref.watch(guardianRiskEngineProvider);
   final engine = ref.watch(guardianEngineProvider);
-  final voiceService = ref.watch(voiceServiceProvider);
-  final sensorService = ref.watch(sensorServiceProvider);
   final dashboard = ref.watch(dashboardProvider).valueOrNull;
 
-  // Compute live multi-signal risk
-  final hasFall = sensorService.fallDetector.fallDetected;
-  final hasShake = sensorService.liveAccelMagnitude > 22.0;
-  final lastDev = engine.deviationDetector.lastDistanceMeters;
+  if (!engine.isActive) {
+    return RiskAssessmentReport.baseline();
+  }
 
+  final riskEngine = ref.watch(guardianRiskEngineProvider);
   return riskEngine.evaluateRisk(
     currentTime: DateTime.now(),
     locationSafetyScore: dashboard?.safetyScore.toDouble() ?? 82.0,
     batteryPercent: engine.batteryPercent,
-    hasMotionAnomaly: hasFall || hasShake,
-    motionAnomalyPeak: sensorService.liveAccelMagnitude,
-    hasVoiceDistress: voiceService.matchedKeywords.isNotEmpty,
-    voiceUrgency: voiceService.latestUrgency,
-    routeDeviationMeters: lastDev > 50 ? lastDev : null,
     stationarySeconds: engine.stationarySeconds,
     weatherCondition: dashboard?.weather.condition,
+    accumulatedFactors: engine.accumulatedSignals,
   );
 });
 

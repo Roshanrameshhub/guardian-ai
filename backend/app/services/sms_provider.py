@@ -64,7 +64,9 @@ class TwilioSmsProvider(SmsProvider):
                     return True, sid
                 else:
                     logger.error("twilio_sms_failed", status=resp.status_code, body=resp.text)
-                    return False, f"Twilio HTTP {resp.status_code}: {resp.text}"
+                    if resp.status_code in (401, 403) or "20003" in resp.text or "Authenticate" in resp.text:
+                        return False, "SMS unavailable — provider account inactive"
+                    return False, f"SMS delivery failed (Status {resp.status_code})"
         except Exception as e:
             logger.error("twilio_sms_exception", error=str(e))
-            return False, str(e)
+            return False, "SMS service temporarily unavailable"
