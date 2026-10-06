@@ -63,6 +63,8 @@ class RiskFusionRequest(BaseModel):
     signals: List[SignalInput]
     guardian_mode_active: bool = False
     nearby_safety_incident: bool = False
+    current_lat: Optional[float] = None
+    current_lng: Optional[float] = None
 
 
 class RiskSignalDetail(BaseModel):

@@ -34,6 +34,11 @@ class TrustedContact(Base):
     emergency_notify_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     location_share_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     is_online: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # Telegram linking
+    telegram_chat_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    telegram_link_token: Mapped[str | None] = mapped_column(String(50), nullable=True, unique=True, index=True)
+    telegram_link_expires: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=_now, onupdate=_now, nullable=False

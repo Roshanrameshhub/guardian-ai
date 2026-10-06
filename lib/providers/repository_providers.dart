@@ -112,6 +112,7 @@ final guardianEngineProvider = Provider<GuardianEngine>((ref) {
     locationService: ref.watch(locationServiceProvider),
     sensorService: ref.watch(sensorServiceProvider),
     voiceService: ref.watch(voiceServiceProvider),
+    intelligenceRepository: ref.watch(intelligenceRepositoryProvider),
     backgroundSafetyService: ref.watch(backgroundSafetyServiceProvider),
     routeDeviationDetector: ref.watch(routeDeviationDetectorProvider),
     stationaryDetector: ref.watch(stationaryDetectorProvider),

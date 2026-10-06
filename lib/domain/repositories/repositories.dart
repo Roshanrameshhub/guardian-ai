@@ -22,6 +22,7 @@ abstract class ContactRepository {
   Future<TrustedContactEntity> createContact(TrustedContactEntity contact);
   Future<TrustedContactEntity> updateContact(TrustedContactEntity contact);
   Future<void> deleteContact(String contactId);
+  Future<TelegramLinkResponseDto> generateTelegramLink(String contactId);
 }
 
 

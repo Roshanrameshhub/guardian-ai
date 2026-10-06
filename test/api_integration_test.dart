@@ -672,6 +672,7 @@ void main() {
         locationService: LocationService(),
         sensorService: SensorService(intelligenceRepository: MockIntelligenceRepo()),
         voiceService: VoiceService(intelligenceRepository: MockIntelligenceRepo()),
+        intelligenceRepository: MockIntelligenceRepo(),
       );
 
       // Low Risk (<30%) -> 60s

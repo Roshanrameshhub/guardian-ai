@@ -44,6 +44,7 @@ class TrustedContactEntity {
     this.emergencyNotifyEnabled = true,
     this.locationShareEnabled = false,
     this.priority = 1,
+    this.isTelegramLinked = false,
   });
 
   final String id;
@@ -55,6 +56,7 @@ class TrustedContactEntity {
   final bool emergencyNotifyEnabled;
   final bool locationShareEnabled;
   final int priority;
+  final bool isTelegramLinked;
 
   TrustedContactEntity copyWith({
     String? id,
@@ -66,6 +68,7 @@ class TrustedContactEntity {
     bool? emergencyNotifyEnabled,
     bool? locationShareEnabled,
     int? priority,
+    bool? isTelegramLinked,
   }) {
     return TrustedContactEntity(
       id: id ?? this.id,
@@ -77,6 +80,7 @@ class TrustedContactEntity {
       emergencyNotifyEnabled: emergencyNotifyEnabled ?? this.emergencyNotifyEnabled,
       locationShareEnabled: locationShareEnabled ?? this.locationShareEnabled,
       priority: priority ?? this.priority,
+      isTelegramLinked: isTelegramLinked ?? this.isTelegramLinked,
     );
   }
 }

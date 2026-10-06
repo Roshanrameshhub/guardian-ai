@@ -361,6 +361,8 @@ class RiskFusionRequest {
     this.journeyId,
     this.guardianModeActive = false,
     this.nearbySafetyIncident = false,
+  this.currentLat,
+    this.currentLng,
   });
 
   final List<SignalInputDto> signals;
@@ -368,11 +370,16 @@ class RiskFusionRequest {
   final bool guardianModeActive;
   final bool nearbySafetyIncident;
 
+  final double? currentLat;
+  final double? currentLng;
+
   Map<String, dynamic> toJson() => {
         'signals': signals.map((s) => s.toJson()).toList(),
         if (journeyId != null) 'journey_id': journeyId,
         'guardian_mode_active': guardianModeActive,
         'nearby_safety_incident': nearbySafetyIncident,
+        if (currentLat != null) 'current_lat': currentLat,
+        if (currentLng != null) 'current_lng': currentLng,
       };
 }
 
@@ -437,4 +444,21 @@ class OfflineBatchSyncRequest {
       };
 }
 
+class TelegramLinkResponseDto {
+  const TelegramLinkResponseDto({
+    required this.linkToken,
+    required this.botUsername,
+    required this.expiresInMinutes,
+  });
 
+  final String linkToken;
+  final String botUsername;
+  final int expiresInMinutes;
+
+  factory TelegramLinkResponseDto.fromJson(Map<String, dynamic> json) =>
+      TelegramLinkResponseDto(
+        linkToken: json['link_token'] as String? ?? '',
+        botUsername: json['bot_username'] as String? ?? '',
+        expiresInMinutes: (json['expires_in_minutes'] as num?)?.toInt() ?? 10,
+      );
+}

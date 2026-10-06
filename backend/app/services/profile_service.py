@@ -6,8 +6,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import ForbiddenError, NotFoundError
 from app.models.contact import TrustedContact
 from app.models.user import User, UserProfile
-from app.schemas.contact import TrustedContactCreate, TrustedContactUpdate
+from app.schemas.contact import TrustedContactCreate, TrustedContactUpdate, TelegramLinkResponse
 from app.schemas.user import UserResponse, UserUpdateRequest
+import secrets
+from datetime import datetime, timedelta, timezone
 
 
 def _build_user_response(user: User, profile: UserProfile | None, contact_count: int) -> UserResponse:
@@ -126,3 +128,19 @@ class ContactService:
         contact = await self.get_contact(user_id, contact_id)
         await self._db.delete(contact)
         await self._db.commit()
+
+    async def generate_telegram_link(self, user_id: str, contact_id: str) -> TelegramLinkResponse:
+        contact = await self.get_contact(user_id, contact_id)
+        
+        token = secrets.token_urlsafe(16)
+        expires = datetime.now(tz=timezone.utc) + timedelta(minutes=10)
+        
+        contact.telegram_link_token = token
+        contact.telegram_link_expires = expires
+        await self._db.commit()
+        
+        return TelegramLinkResponse(
+            link_token=token,
+            bot_username="GuardAIAlertBot",
+            expires_in_minutes=10,
+        )

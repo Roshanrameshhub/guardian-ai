@@ -36,6 +36,7 @@ TrustedContactEntity _contactFromJson(Map<String, dynamic> json) =>
       emergencyNotifyEnabled: json['emergency_notify_enabled'] as bool? ?? true,
       locationShareEnabled: json['location_share_enabled'] as bool? ?? false,
       priority: (json['priority'] as num?)?.toInt() ?? 1,
+      isTelegramLinked: json['is_telegram_linked'] as bool? ?? false,
     );
 
 WeatherEntity _weatherFromJson(Map<String, dynamic> json) => WeatherEntity(
@@ -442,6 +443,12 @@ class ContactRepositoryImpl implements ContactRepository {
   @override
   Future<void> deleteContact(String contactId) async {
     await _api.delete('${ApiConstants.contacts}/$contactId');
+  }
+
+  @override
+  Future<TelegramLinkResponseDto> generateTelegramLink(String contactId) async {
+    final json = await _api.post('${ApiConstants.contacts}/$contactId/telegram-link');
+    return TelegramLinkResponseDto.fromJson(json);
   }
 }
 

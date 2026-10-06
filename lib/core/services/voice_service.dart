@@ -254,23 +254,23 @@ class VoiceService {
           cancelOnError: false,
           partialResults: true,
           onDevice: false,
-          listenFor: const Duration(seconds: 30),
-          pauseFor: const Duration(seconds: 5),
+          listenFor: const Duration(seconds: 60),
+          pauseFor: const Duration(seconds: 15),
         ),
       );
       DevLog.log('VOICE', '[VOICE] listening started');
       _setState(VoiceState.listening);
     } catch (e) {
       DevLog.log('VOICE', '[VOICE] listen start failed: $e');
-      _scheduleRestart(delayMs: 1000);
+      _scheduleRestart(delayMs: 1500);
     }
   }
 
-  void _scheduleRestart({int delayMs = 400}) {
+  void _scheduleRestart({int delayMs = 1200}) {
     if (!_isMonitoring) return;
     _restartDebounceTimer?.cancel();
     _restartDebounceTimer = Timer(Duration(milliseconds: delayMs), () {
-      if (_isMonitoring) {
+      if (_isMonitoring && !_stt.isListening) {
         _startListenCycle();
       }
     });
@@ -278,7 +278,7 @@ class VoiceService {
 
   void _startWatchdog() {
     _watchdogTimer?.cancel();
-    _watchdogTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+    _watchdogTimer = Timer.periodic(const Duration(seconds: 10), (_) {
       if (_isMonitoring && _state != VoiceState.paused && _state != VoiceState.permissionRequired) {
         if (!_stt.isListening) {
           DevLog.log('VOICE', '[VOICE] Watchdog: recognizer inactive, triggering safe restart cycle');
@@ -295,6 +295,10 @@ class VoiceService {
     _latestTranscript = rawTranscript;
     _lastEventSource = 'REAL_MIC';
 
+    if (_state != VoiceState.distressDetected) {
+      _setState(VoiceState.processing);
+    }
+
     DevLog.log('VOICE', '[VOICE] recognition result received (words: ${rawTranscript.split(" ").length}, final: ${result.finalResult})');
     DevLog.log('VOICE', '[VOICE] recognized text received');
 
@@ -303,6 +307,15 @@ class VoiceService {
 
     // If session finalized, schedule continuous loop restart
     if (result.finalResult && _isMonitoring) {
+      if (_state == VoiceState.processing) {
+        // Fallback to listening state after a short delay so the user can read the final processed text
+        Timer(const Duration(milliseconds: 1500), () {
+          if (_isMonitoring && _state == VoiceState.processing) {
+            _latestTranscript = '';
+            _setState(VoiceState.listening);
+          }
+        });
+      }
       _scheduleRestart(delayMs: 400);
     }
   }

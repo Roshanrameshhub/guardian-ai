@@ -32,9 +32,9 @@ class EmergencyService:
         5. Update delivery status (never lie about failures)
         6. Return accurate status
         """
-        # Check for very recent duplicate SOS (idempotency — within 30 seconds)
+        # Check for very recent duplicate SOS (idempotency — within 20 seconds)
         from datetime import timedelta
-        cutoff = datetime.now(tz=timezone.utc) - timedelta(seconds=30)
+        cutoff = datetime.now(tz=timezone.utc) - timedelta(seconds=20)
         recent = await self._db.scalar(
             select(EmergencyEvent).where(
                 EmergencyEvent.user_id == user_id,
@@ -121,6 +121,18 @@ class EmergencyService:
                             )
                         )
 
+                # 3. Queue Telegram
+                if contact.telegram_chat_id:
+                    notification_records.append(
+                        EmergencyNotification(
+                            event_id=event.id,
+                            contact_id=contact.id,
+                            channel="telegram",
+                            recipient=contact.telegram_chat_id,
+                            delivery_status=NotificationDeliveryStatus.queued,
+                        )
+                    )
+
         self._db.add_all(notification_records)
 
         event.status = EmergencyStatus.notifications_queued
@@ -199,9 +211,11 @@ class EmergencyService:
 
         from app.services.sms_provider import TwilioSmsProvider
         from app.services.fcm_provider import FcmProvider
+        from app.services.telegram_provider import TelegramProvider
         
         sms_provider = TwilioSmsProvider()
         fcm_provider = FcmProvider()
+        telegram_provider = TelegramProvider()
 
         for notif in notifications:
             success = False
@@ -238,6 +252,19 @@ class EmergencyService:
                         notif.failure_reason = reason
                 else:
                     notif.failure_reason = "FCM push not configured (Firebase service account required)"
+
+            elif notif.channel == "telegram":
+                if settings.has_telegram:
+                    success, reason = await telegram_provider.send_emergency_message(
+                        chat_id=notif.recipient,
+                        message=req.message or 'Needs help immediately.',
+                        lat=req.lat,
+                        lng=req.lng
+                    )
+                    if not success:
+                        notif.failure_reason = reason
+                else:
+                    notif.failure_reason = "Telegram Bot not configured"
 
 
             if success:

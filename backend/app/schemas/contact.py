@@ -13,8 +13,14 @@ class TrustedContactResponse(BaseModel):
     relationship_label: str | None = None
     emergency_notify_enabled: bool = True
     location_share_enabled: bool = False
+    is_telegram_linked: bool = False
 
     model_config = {"from_attributes": True}
+
+class TelegramLinkResponse(BaseModel):
+    link_token: str
+    bot_username: str
+    expires_in_minutes: int
 
 
 class TrustedContactCreate(BaseModel):

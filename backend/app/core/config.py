@@ -109,6 +109,9 @@ class Settings(BaseSettings):
     smtp_password: str = ""
     smtp_from: str = "noreply@guardian.ai"
 
+    # ── Telegram ──────────────────────────────────────────────────────────────
+    telegram_bot_token: str = ""
+
     # ── Weather Cache ─────────────────────────────────────────────────────────
     weather_cache_ttl_seconds: int = 600
 
@@ -160,6 +163,10 @@ class Settings(BaseSettings):
     @property
     def has_sms(self) -> bool:
         return bool(self.twilio_account_sid and self.twilio_auth_token)
+
+    @property
+    def has_telegram(self) -> bool:
+        return bool(self.telegram_bot_token)
 
 
 @lru_cache

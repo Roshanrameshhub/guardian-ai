@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../../../core/utils/dev_log.dart';
 import '../../../domain/entities/entities.dart';
@@ -197,20 +198,26 @@ class GuardianMapController extends StateNotifier<GuardianMapState> {
     String travelMode = 'DRIVE',
   }) async {
     // 1. Fetch phone's real current GPS location before planning
-    LatLngPoint? userPos;
+    final locService = _ref.read(locationServiceProvider);
+    Position pos;
     try {
-      final locService = _ref.read(locationServiceProvider);
-      final pos = await locService.getCurrentPosition(
-        timeout: const Duration(seconds: 4),
+      pos = await locService.getCurrentPosition(
+        timeout: const Duration(seconds: 10),
       );
-      userPos = LatLngPoint(pos.latitude, pos.longitude);
-      state = state.copyWith(userLocation: userPos);
-    } catch (_) {
-      userPos = state.userLocation;
+    } catch (e) {
+      DevLog.route('GPS acquisition failed: $e');
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Unable to acquire accurate GPS position: $e. Please ensure location services are enabled and permissions are granted.',
+      );
+      return;
     }
 
-    final originLat = userPos?.lat ?? 13.0827;
-    final originLng = userPos?.lng ?? 80.2707;
+    final userPos = LatLngPoint(pos.latitude, pos.longitude);
+    state = state.copyWith(userLocation: userPos);
+
+    final originLat = userPos.lat;
+    final originLng = userPos.lng;
 
     // Log exact requirement: [MAP] origin = CURRENT_GPS_LAT,LNG
     // ignore: avoid_print

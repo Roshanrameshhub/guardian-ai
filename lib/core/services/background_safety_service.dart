@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:battery_plus/battery_plus.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:geolocator/geolocator.dart';
@@ -14,11 +15,13 @@ class BackgroundSafetyService {
   BackgroundSafetyService({
     FlutterLocalNotificationsPlugin? localNotifications,
     Battery? battery,
+    this.onStopRequested,
   })  : _notifications = localNotifications ?? FlutterLocalNotificationsPlugin(),
         _battery = battery ?? Battery();
 
   final FlutterLocalNotificationsPlugin _notifications;
   final Battery _battery;
+  VoidCallback? onStopRequested;
 
   bool _isServiceRunning = false;
   bool _isInitialized = false;
@@ -42,7 +45,11 @@ class BackgroundSafetyService {
       await _notifications.initialize(
         initSettings,
         onDidReceiveNotificationResponse: (response) {
-          DevLog.log('BG_SERVICE', 'Notification tapped: ${response.payload}');
+          DevLog.log('BG_SERVICE', 'Notification response: action=${response.actionId}, payload=${response.payload}');
+          if (response.actionId == 'stop_monitoring') {
+            stopForegroundService();
+            onStopRequested?.call();
+          }
         },
       );
       _isInitialized = true;
@@ -183,6 +190,14 @@ class BackgroundSafetyService {
       showWhen: true,
       onlyAlertOnce: !isElevatedRisk,
       category: AndroidNotificationCategory.service,
+      actions: const [
+        AndroidNotificationAction(
+          'stop_monitoring',
+          'STOP MONITORING',
+          showsUserInterface: true,
+          cancelNotification: true,
+        ),
+      ],
     );
 
     final platformDetails = NotificationDetails(android: androidDetails);

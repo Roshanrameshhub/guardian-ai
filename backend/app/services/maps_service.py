@@ -65,33 +65,62 @@ class MapsService:
                 "or destination coordinates (dest_lat, dest_lng)."
             )
 
-        target_dest_lat = dest_lat if has_dest_coords else 13.0500
-        target_dest_lng = dest_lng if has_dest_coords else 80.2824
         dest_display = destination.strip() if has_dest_name else "Destination"
 
-        # 1. Try Google Routes API (v2:computeRoutes)
-        try:
-            route_res = await self._call_google_routes_v2(
-                origin_lat, origin_lng, target_dest_lat, target_dest_lng, dest_display
-            )
-            if route_res:
-                return route_res
-        except GuardianException:
-            raise
-        except Exception as e:
-            logger.warning("google_routes_v2_failed", error=str(e))
+        # If destination coordinates are explicitly provided:
+        if has_dest_coords:
+            target_dest_lat = dest_lat
+            target_dest_lng = dest_lng
 
-        # 2. Try Google Directions API (v1)
-        try:
-            route_res = await self._call_google_directions_v1(
-                origin_lat, origin_lng, target_dest_lat, target_dest_lng, dest_display, destination
+            # 1. Try Google Routes API (v2:computeRoutes)
+            try:
+                route_res = await self._call_google_routes_v2(
+                    origin_lat, origin_lng, target_dest_lat, target_dest_lng, dest_display
+                )
+                if route_res:
+                    return route_res
+            except GuardianException:
+                raise
+            except Exception as e:
+                logger.warning("google_routes_v2_failed", error=str(e))
+
+            # 2. Try Google Directions API (v1)
+            try:
+                route_res = await self._call_google_directions_v1(
+                    origin_lat, origin_lng, target_dest_lat, target_dest_lng, dest_display, destination
+                )
+                if route_res:
+                    return route_res
+            except GuardianException:
+                raise
+            except Exception as e:
+                logger.warning("google_directions_v1_failed", error=str(e))
+
+            # 3. Fallback to OSRM Real Road Router
+            try:
+                route_res = await self._call_osrm_road_router(
+                    origin_lat, origin_lng, target_dest_lat, target_dest_lng, dest_display
+                )
+                if route_res:
+                    return route_res
+            except Exception as e:
+                logger.error("osrm_routing_failed", error=str(e))
+        else:
+            # If only destination name is provided, resolve via Google Directions v1
+            try:
+                route_res = await self._call_google_directions_v1(
+                    origin_lat, origin_lng, 0.0, 0.0, dest_display, destination
+                )
+                if route_res:
+                    return route_res
+            except GuardianException:
+                raise
+            except Exception as e:
+                logger.warning("google_directions_name_failed", error=str(e))
+
+            raise BadRequestError(
+                f"Could not resolve location for '{dest_display}'. Please provide explicit destination coordinates (dest_lat, dest_lng)."
             )
-            if route_res:
-                return route_res
-        except GuardianException:
-            raise
-        except Exception as e:
-            logger.warning("google_directions_v1_failed", error=str(e))
 
         # 3. Fallback to OSRM Real Road Router
         try:

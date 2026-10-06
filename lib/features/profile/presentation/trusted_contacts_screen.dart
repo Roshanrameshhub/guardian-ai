@@ -287,6 +287,10 @@ class _ContactCard extends ConsumerWidget {
                     const SizedBox(width: AppSpacing.sm),
                     if (contact.locationShareEnabled)
                       const _Badge(label: 'Live Track', color: AppColors.tertiary, icon: Icons.location_on),
+                    if (contact.locationShareEnabled)
+                      const SizedBox(width: AppSpacing.sm),
+                    if (contact.isTelegramLinked)
+                      const _Badge(label: 'Telegram', color: Colors.blue, icon: Icons.telegram),
                   ],
                 ),
               ],
@@ -303,6 +307,8 @@ class _ContactCard extends ConsumerWidget {
                   ref: ref,
                   existingContact: contact,
                 );
+              } else if (value == 'telegram') {
+                _showTelegramLinkDialog(context, ref, contact);
               } else if (value == 'delete') {
                 final confirmed = await showConfirmDialog(
                   context: context,
@@ -326,6 +332,17 @@ class _ContactCard extends ConsumerWidget {
                   ],
                 ),
               ),
+              if (!contact.isTelegramLinked)
+                const PopupMenuItem(
+                  value: 'telegram',
+                  child: Row(
+                    children: [
+                      Icon(Icons.telegram, color: Colors.blue, size: 18),
+                      SizedBox(width: AppSpacing.sm),
+                      Text('Link Telegram'),
+                    ],
+                  ),
+                ),
               const PopupMenuItem(
                 value: 'delete',
                 child: Row(
@@ -341,6 +358,65 @@ class _ContactCard extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _showTelegramLinkDialog(BuildContext context, WidgetRef ref, TrustedContactEntity contact) async {
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (c) => const Center(child: CircularProgressIndicator()),
+      );
+      
+      final response = await ref.read(contactsControllerProvider.notifier).generateTelegramLink(contact.id);
+      
+      if (context.mounted) {
+        Navigator.pop(context); // Close loading
+        showAppBottomSheet(
+          context: context,
+          title: 'Link Telegram',
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Ask ${contact.name} to send the following message to our Telegram bot to receive emergency alerts.',
+                style: AppTextStyles.bodyMd,
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Text('Bot Username:', style: AppTextStyles.labelSm),
+              Text('@${response.botUsername}', style: AppTextStyles.headlineMd.copyWith(color: AppColors.primaryPulse)),
+              const SizedBox(height: AppSpacing.md),
+              Text('Send this exact message:', style: AppTextStyles.labelSm),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: const BoxDecoration(
+                  color: AppColors.surfaceContainerHigh,
+                  borderRadius: AppRadius.borderMd,
+                ),
+                child: SelectableText(
+                  '/start ${response.linkToken}',
+                  style: const TextStyle(fontSize: 18, fontFamily: 'monospace', fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                'This link will expire in ${response.expiresInMinutes} minutes.',
+                style: AppTextStyles.labelSm.copyWith(color: AppColors.error),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.pop(context); // Close loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString()), backgroundColor: AppColors.error),
+        );
+      }
+    }
   }
 }
 

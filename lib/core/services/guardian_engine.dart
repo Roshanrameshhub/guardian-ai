@@ -9,6 +9,7 @@ import '../../data/dto/api_dto.dart';
 import '../../domain/entities/entities.dart';
 import '../../domain/repositories/repositories.dart';
 import '../utils/dev_log.dart';
+import '../widgets/sos_dialog.dart';
 import 'background_safety_service.dart';
 import 'location_service.dart';
 import 'route_deviation_detector.dart';
@@ -25,6 +26,7 @@ class GuardianEngine with WidgetsBindingObserver {
     required LocationService locationService,
     required SensorService sensorService,
     required VoiceService voiceService,
+    required IntelligenceRepository intelligenceRepository,
     BackgroundSafetyService? backgroundSafetyService,
     RouteDeviationDetector? routeDeviationDetector,
     StationaryDetector? stationaryDetector,
@@ -33,11 +35,15 @@ class GuardianEngine with WidgetsBindingObserver {
         _locationService = locationService,
         _sensorService = sensorService,
         _voiceService = voiceService,
+        _intelligenceRepo = intelligenceRepository,
         _bgService = backgroundSafetyService ?? BackgroundSafetyService(),
         _deviationDetector = routeDeviationDetector ?? RouteDeviationDetector(),
         _stationaryDetector = stationaryDetector ?? StationaryDetector(),
         _battery = Battery() {
     WidgetsBinding.instance.addObserver(this);
+    _bgService.onStopRequested = () {
+      stopGuardian();
+    };
   }
 
   final GuardianRepository _guardianRepo;
@@ -49,6 +55,7 @@ class GuardianEngine with WidgetsBindingObserver {
   final RouteDeviationDetector _deviationDetector;
   final StationaryDetector _stationaryDetector;
   final Battery _battery;
+  final IntelligenceRepository _intelligenceRepo;
 
   bool _isActive = false;
   int _heartbeatIntervalSeconds = 60;
@@ -210,6 +217,7 @@ class GuardianEngine with WidgetsBindingObserver {
           title: '⚠ POSSIBLE FALL DETECTED',
           message: 'Multi-stage fall signature detected with post-impact stillness.',
         );
+        showEmergencySosModal(triggerSource: 'fall_detected');
       } else if (anomaly == MotionEventType.phoneDrop) {
         logEvent(
           type: SafetyEventType.phoneDrop,
@@ -224,6 +232,7 @@ class GuardianEngine with WidgetsBindingObserver {
           title: '⚠ UNUSUAL MOVEMENT DETECTED',
           message: 'High acceleration shake peak recorded by accelerometer.',
         );
+        showEmergencySosModal(triggerSource: 'shake_detected');
       }
     });
 
@@ -237,6 +246,7 @@ class GuardianEngine with WidgetsBindingObserver {
         title: '⚠ POSSIBLE DISTRESS',
         message: '"$phrase" detected.',
       );
+      showEmergencySosModal(triggerSource: 'voice_distress');
     });
 
     // 7. Start risk-calibrated periodic heartbeat
@@ -277,6 +287,7 @@ class GuardianEngine with WidgetsBindingObserver {
     _heartbeatTimer?.cancel();
     _heartbeatTimer = Timer.periodic(Duration(seconds: _heartbeatIntervalSeconds), (_) async {
       await _dispatchHeartbeat();
+      await _dispatchRiskFusion();
     });
   }
 
@@ -363,6 +374,57 @@ class GuardianEngine with WidgetsBindingObserver {
         currentPosition: _currentPosition,
         batteryLevel: _batteryPercent,
       );
+    }
+  }
+
+
+  Future<void> _dispatchRiskFusion() async {
+    if (!_isActive) return;
+    try {
+      final List<SignalInputDto> signals = [];
+      
+      if (_sensorService.liveAccelMagnitude > 16.0) {
+        signals.add(const SignalInputDto(
+          type: 'MOTION_ANOMALY',
+          score: 0.8,
+          confidence: 0.9,
+        ));
+      }
+      if (_voiceService.matchedKeywords.isNotEmpty) {
+        signals.add(const SignalInputDto(
+          type: 'VOICE_DISTRESS',
+          score: 0.85,
+          confidence: 0.95,
+        ));
+      }
+      if (_stationarySeconds > 180) {
+        signals.add(const SignalInputDto(
+          type: 'STATIONARY_ANOMALY',
+          score: 0.6,
+          confidence: 0.8,
+        ));
+      }
+
+      if (signals.isEmpty) {
+        signals.add(const SignalInputDto(type: 'BASELINE', score: 0.1, confidence: 1.0));
+      }
+
+      final riskReport = await _intelligenceRepo.fuseRisk(
+        RiskFusionRequest(
+          signals: signals,
+          journeyId: _activeJourneyId,
+          guardianModeActive: true,
+          currentLat: _currentPosition?.latitude,
+          currentLng: _currentPosition?.longitude,
+        ),
+      );
+      
+      if (riskReport.riskLevel == 'CRITICAL' && riskReport.autoEscalatePrepared) {
+         DevLog.sos('Backend commanded SOS based on fused risk!');
+         showEmergencySosModal(triggerSource: 'critical_risk_fusion');
+      }
+    } catch (e) {
+      DevLog.guardian('Backend risk fusion failed: ');
     }
   }
 

@@ -78,10 +78,10 @@ class MultiStageFallDetector {
   Timer? _immobilityTimer;
 
   // Calibration thresholds
-  static const double _freefallThreshold = 5.0; // m/s² (~0.5g)
-  static const double _impactThreshold = 25.0; // m/s² (~2.5g)
-  static const double _gyroRotationThreshold = 3.5; // rad/s
-  static const double _stillnessVarianceLimit = 2.4; // m/s² std dev for post-fall resting
+  static const double _freefallThreshold = 5.5; // m/s² (~0.55g)
+  static const double _impactThreshold = 21.0; // m/s² (~2.15g)
+  static const double _gyroRotationThreshold = 2.2; // rad/s
+  static const double _stillnessVarianceLimit = 3.2; // m/s² std dev for post-fall resting
 
   /// Machine learning sensitivity multiplier calibrated dynamically from user false alarm feedback.
   /// (e.g. 1.10 = 10% higher threshold to prevent repeated false positives).
@@ -208,7 +208,7 @@ class MultiStageFallDetector {
     FallEvaluationResult result = FallEvaluationResult.noFall;
     String reason = 'Normal movement pattern.';
 
-    if (confidence >= 0.65 && hasImpact && (hasRotation || hasFreefall || isImmobile)) {
+    if (confidence >= 0.55 && hasImpact && (hasRotation || hasFreefall || isImmobile)) {
       result = FallEvaluationResult.fallSuspected;
       reason = 'Multi-stage fall criteria satisfied: impact (${_peakAccel.toStringAsFixed(1)} m/s²), '
           'rotation (${_peakGyro.toStringAsFixed(1)} rad/s), post-impact immobility=$isImmobile.';

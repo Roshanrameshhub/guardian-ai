@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/utils/dev_log.dart';
 import '../../../domain/entities/entities.dart';
+import '../../../data/dto/api_dto.dart';
 import '../../../providers/repository_providers.dart';
 import '../../home/presentation/home_controller.dart';
 
@@ -113,6 +114,21 @@ class ContactsController extends StateNotifier<AsyncValue<void>> {
       state = const AsyncData(null);
     } catch (e, st) {
       DevLog.contact('Failed to delete contact', error: e);
+      state = AsyncError(e, st);
+      rethrow;
+    }
+  }
+
+  Future<TelegramLinkResponseDto> generateTelegramLink(String contactId) async {
+    state = const AsyncLoading();
+    try {
+      DevLog.contact('Generating Telegram link for contact id: $contactId');
+      final repo = _ref.read(contactRepositoryProvider);
+      final response = await repo.generateTelegramLink(contactId);
+      state = const AsyncData(null);
+      return response;
+    } catch (e, st) {
+      DevLog.contact('Failed to generate telegram link', error: e);
       state = AsyncError(e, st);
       rethrow;
     }

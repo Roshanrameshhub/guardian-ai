@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from typing import List
+from datetime import datetime, timezone, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.intelligence import RiskAssessment, RiskLevel
+from app.services.weather_service import WeatherService
 from app.schemas.intelligence import (
     RiskFusionRequest,
     RiskFusionResponse,
@@ -80,6 +82,39 @@ class RiskFusionService:
         if req.nearby_safety_incident:
             # Active local safety incident in immediate vicinity
             weighted_sum = min(1.0, weighted_sum + 0.10)
+
+        # Context: Time of day (Night multiplier)
+        ist_tz = timezone(timedelta(hours=5, minutes=30))
+        now_ist = datetime.now(ist_tz)
+        is_night = now_ist.hour >= 19 or now_ist.hour < 6
+        if is_night:
+            weighted_sum = min(1.0, weighted_sum * 1.15)
+            signal_details.append(
+                RiskSignalDetail(
+                    type="CONTEXT_NIGHT_TIME",
+                    score=0.15, # Representational
+                    weighted_contribution=0.0,
+                    explanation="Night time context active, increasing overall risk sensitivity."
+                )
+            )
+
+        # Context: Weather Integration
+        if req.current_lat is not None and req.current_lng is not None:
+            weather_service = WeatherService()
+            weather = await weather_service.get_weather(req.current_lat, req.current_lng)
+            
+            # Weather risk heuristics
+            bad_conditions = ["Rain", "Thunderstorm", "Snow", "Mist", "Fog"]
+            if weather.condition in bad_conditions or weather.visibility_km < 2.0:
+                weighted_sum = min(1.0, weighted_sum + 0.05)
+                signal_details.append(
+                    RiskSignalDetail(
+                        type="CONTEXT_BAD_WEATHER",
+                        score=0.05,
+                        weighted_contribution=0.05,
+                        explanation=f"Adverse weather condition ({weather.condition}, vis: {weather.visibility_km}km) detected, marginally elevating risk."
+                    )
+                )
 
         final_risk_score = round(min(1.0, max(0.0, weighted_sum)), 2)
 

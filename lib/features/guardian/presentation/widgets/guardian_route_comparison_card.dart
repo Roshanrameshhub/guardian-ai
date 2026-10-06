@@ -209,7 +209,7 @@ class GuardianRouteComparisonCard extends StatelessWidget {
                         borderRadius: AppRadius.borderFull,
                       ),
                       child: Text(
-                        'Safety: ${active.safetyScore}/100',
+                        'Safety: ${active.safetyScore}/100 · Risk: ${(100 - active.safetyScore)}% (Estimated)',
                         style: AppTextStyles.labelSm.copyWith(
                           color: AppColors.white,
                           fontWeight: FontWeight.w700,

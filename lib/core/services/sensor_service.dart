@@ -227,9 +227,12 @@ class SensorService {
       return;
     }
 
-    // Physical high-intensity shake detection (> 26.0 m/s^2 impact with high rotational variance)
-    // Picking up the phone (11-14 m/s^2) or placing on table will NEVER trigger this.
-    if (magnitude > 26.0 && _liveGyroMagnitude > 3.5) {
+    // Physical intentional shake detection (accelerometer spike with rotational variance)
+    // Walking/running (11-15 m/s²) and picking up phone will NOT trigger this.
+    final isDeliberateShake = (magnitude >= 20.0 && _liveGyroMagnitude >= 1.8) ||
+        (magnitude >= 24.0 && _liveGyroMagnitude >= 1.2);
+
+    if (isDeliberateShake) {
       _lastAnomalyTime = now;
       DevLog.log('SENSOR', 'DELIBERATE SHAKE DETECTED: magnitude=${magnitude.toStringAsFixed(2)} m/s², gyro=${_liveGyroMagnitude.toStringAsFixed(2)} rad/s');
       _anomalyController.add(MotionEventType.shakeDetected);

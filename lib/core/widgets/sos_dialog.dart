@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../config/app_router.dart';
 import '../theme/app_colors.dart';
-
 import '../theme/app_icons.dart';
 import '../theme/radius.dart';
 import '../theme/spacing.dart';
@@ -21,40 +21,45 @@ enum SosDialogState {
   error,
 }
 
+bool _isSosModalVisible = false;
+
 Future<void> showEmergencySosModal({
-  required BuildContext context,
-  required WidgetRef ref,
+  BuildContext? context,
+  WidgetRef? ref,
   String triggerSource = 'manual',
 }) {
+  final targetContext = context ?? rootNavigatorKey.currentContext;
+  if (targetContext == null || _isSosModalVisible) return Future.value();
+  _isSosModalVisible = true;
+
   return showModalBottomSheet(
-    context: context,
+    context: targetContext,
     isDismissible: false,
     enableDrag: false,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (ctx) => _EmergencySosSheet(
-      ref: ref,
       triggerSource: triggerSource,
     ),
-  );
+  ).whenComplete(() {
+    _isSosModalVisible = false;
+  });
 }
 
-class _EmergencySosSheet extends StatefulWidget {
+class _EmergencySosSheet extends ConsumerStatefulWidget {
   const _EmergencySosSheet({
-    required this.ref,
     required this.triggerSource,
   });
 
-  final WidgetRef ref;
   final String triggerSource;
 
   @override
-  State<_EmergencySosSheet> createState() => _EmergencySosSheetState();
+  ConsumerState<_EmergencySosSheet> createState() => _EmergencySosSheetState();
 }
 
-class _EmergencySosSheetState extends State<_EmergencySosSheet> {
+class _EmergencySosSheetState extends ConsumerState<_EmergencySosSheet> {
   SosDialogState _state = SosDialogState.countdown;
-  int _secondsRemaining = 3;
+  int _secondsRemaining = 20;
   Timer? _countdownTimer;
   String _statusMessage = '';
   String _channelStatus = '';
@@ -89,7 +94,7 @@ class _EmergencySosSheetState extends State<_EmergencySosSheet> {
     });
 
     try {
-      final locationService = widget.ref.read(locationServiceProvider);
+      final locationService = ref.read(locationServiceProvider);
       final position = await locationService.getCurrentPosition(
         timeout: const Duration(seconds: 10),
       );
@@ -101,7 +106,7 @@ class _EmergencySosSheetState extends State<_EmergencySosSheet> {
         _statusMessage = 'Dispatching emergency alert to Guardian AI...';
       });
 
-      final guardianRepo = widget.ref.read(guardianRepositoryProvider);
+      final guardianRepo = ref.read(guardianRepositoryProvider);
       final response = await guardianRepo.triggerSos(
         SosRequest(
           lat: position.latitude,
@@ -230,8 +235,8 @@ class _EmergencySosSheetState extends State<_EmergencySosSheet> {
                   ),
               const SizedBox(height: AppSpacing.xxl),
               AppButton(
-                label: 'CANCEL SOS',
-                icon: Icons.close,
+                label: 'I AM SAFE / CANCEL',
+                icon: Icons.shield,
                 variant: AppButtonVariant.secondary,
                 onPressed: _cancelSos,
               ),

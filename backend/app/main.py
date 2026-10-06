@@ -52,13 +52,17 @@ async def lifespan(app: FastAPI):
 
     # Start background workers
     watchdog_task = asyncio.create_task(_run_watchdog())
+    from app.workers.telegram_bot import telegram_polling_task
+    telegram_task = asyncio.create_task(telegram_polling_task())
 
     yield
 
     # Shutdown
     watchdog_task.cancel()
+    telegram_task.cancel()
     try:
         await watchdog_task
+        await telegram_task
     except asyncio.CancelledError:
         pass
     log.info("Guardian AI API shutdown complete")

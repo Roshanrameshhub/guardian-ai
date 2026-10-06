@@ -8,6 +8,7 @@ from app.schemas.contact import (
     TrustedContactCreate,
     TrustedContactResponse,
     TrustedContactUpdate,
+    TelegramLinkResponse,
 )
 from app.schemas.user import UserResponse, UserUpdateRequest
 from app.services.profile_service import ContactService, ProfileService
@@ -51,6 +52,7 @@ async def list_contacts(
             relationship_label=c.relationship_label,
             emergency_notify_enabled=c.emergency_notify_enabled,
             location_share_enabled=c.location_share_enabled,
+            is_telegram_linked=bool(c.telegram_chat_id),
         )
         for c in contacts
     ]
@@ -71,6 +73,7 @@ async def create_contact(
         relationship_label=contact.relationship_label,
         emergency_notify_enabled=contact.emergency_notify_enabled,
         location_share_enabled=contact.location_share_enabled,
+        is_telegram_linked=bool(contact.telegram_chat_id),
     )
 
 
@@ -89,6 +92,7 @@ async def get_contact(
         relationship_label=contact.relationship_label,
         emergency_notify_enabled=contact.emergency_notify_enabled,
         location_share_enabled=contact.location_share_enabled,
+        is_telegram_linked=bool(contact.telegram_chat_id),
     )
 
 
@@ -110,6 +114,7 @@ async def update_contact(
         relationship_label=contact.relationship_label,
         emergency_notify_enabled=contact.emergency_notify_enabled,
         location_share_enabled=contact.location_share_enabled,
+        is_telegram_linked=bool(contact.telegram_chat_id),
     )
 
 
@@ -120,3 +125,11 @@ async def delete_contact(
     """Remove a trusted contact."""
     await ContactService(db).delete_contact(user_id, contact_id)
     return ApiMessageResponse(success=True, message="Contact removed.")
+
+
+@contacts_router.post("/{contact_id}/telegram-link", response_model=TelegramLinkResponse)
+async def generate_telegram_link(
+    contact_id: str, user_id: CurrentUserId, db: DbSession
+) -> TelegramLinkResponse:
+    """Generate a link token for Telegram integration."""
+    return await ContactService(db).generate_telegram_link(user_id, contact_id)
