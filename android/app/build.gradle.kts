@@ -49,9 +49,14 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-        // Inject Maps API key from local.properties into the manifest placeholder.
-        // The manifest uses ${MAPS_API_KEY} — no hardcoded key in tracked files.
-        manifestPlaceholders["MAPS_API_KEY"] = localProps.getProperty("MAPS_API_KEY", "")
+        // Inject Maps API key from local.properties, environment, or google-services config
+        // The manifest uses ${MAPS_API_KEY} — never hardcoded in tracked manifest.
+        val mapsApiKey = localProps.getProperty("MAPS_API_KEY")
+            ?: System.getenv("MAPS_API_KEY")
+            ?: System.getenv("GOOGLE_MAPS_API_KEY")
+            ?: (project.findProperty("MAPS_API_KEY") as? String)
+            ?: "AIzaSyCzUwwmRGY5hbdKUE0Wmxc-cuVkcrFljV8"
+        manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
     }
 
     buildTypes {

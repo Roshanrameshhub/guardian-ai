@@ -10,6 +10,7 @@ import '../../../core/theme/app_icons.dart';
 import '../../../core/theme/radius.dart';
 import '../../../core/theme/spacing.dart';
 import '../../../core/theme/text_styles.dart';
+import '../../../core/utils/dev_log.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../../../core/widgets/sos_dialog.dart';
 import '../../../domain/entities/entities.dart';
@@ -77,6 +78,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       if (p.latitude > maxLat) maxLat = p.latitude;
       if (p.longitude < minLng) minLng = p.longitude;
       if (p.longitude > maxLng) maxLng = p.longitude;
+    }
+
+    if ((maxLat - minLat).abs() < 0.001 && (maxLng - minLng).abs() < 0.001) {
+      _mapController!.animateCamera(
+        CameraUpdate.newLatLngZoom(LatLng(minLat, minLng), 15),
+      );
+      return;
     }
 
     final bounds = LatLngBounds(
@@ -151,17 +159,34 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         position: userLoc,
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
         infoWindow: const InfoWindow(title: '📍 Your Location'),
+        onTap: () => controller.selectPoi(SelectedPoiModel(
+          name: 'Your Current Location',
+          type: 'GPS Location',
+          address: 'Lat: ${userLoc.latitude.toStringAsFixed(4)}, Lng: ${userLoc.longitude.toStringAsFixed(4)}',
+          lat: userLoc.latitude,
+          lng: userLoc.longitude,
+        )),
       ),
     };
 
     // Add Destination Marker if route is planned
     if (state.routePlan != null) {
+      final destLat = state.routePlan!.destLat;
+      final destLng = state.routePlan!.destLng;
+      final destName = state.routePlan!.destinationName;
       markers.add(
         Marker(
           markerId: const MarkerId('destination'),
-          position: LatLng(state.routePlan!.destLat, state.routePlan!.destLng),
+          position: LatLng(destLat, destLng),
           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueMagenta),
-          infoWindow: InfoWindow(title: '🏁 ${state.routePlan!.destinationName}'),
+          infoWindow: InfoWindow(title: '🏁 $destName'),
+          onTap: () => controller.selectPoi(SelectedPoiModel(
+            name: destName,
+            type: 'Planned Destination',
+            address: 'Target arrival point',
+            lat: destLat,
+            lng: destLng,
+          )),
         ),
       );
     }
@@ -191,7 +216,17 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             markerId: MarkerId('hospital_${h.id}'),
             position: LatLng(h.latitude, h.longitude),
             icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-            infoWindow: InfoWindow(title: '🏥 ${h.name}'),
+            infoWindow: InfoWindow(title: '🏥 ${h.name}', snippet: h.distanceDisplay),
+            onTap: () => controller.selectPoi(SelectedPoiModel(
+              name: h.name,
+              type: 'Hospital / Emergency Care',
+              address: h.address,
+              distance: h.distanceDisplay,
+              openStatus: h.openNow == true ? 'Open Now' : '24/7 Emergency Care',
+              phone: '108 / 102',
+              lat: h.latitude,
+              lng: h.longitude,
+            )),
           ),
         );
       }
@@ -205,11 +240,46 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             markerId: MarkerId('transit_${t.id}'),
             position: LatLng(t.latitude, t.longitude),
             icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-            infoWindow: InfoWindow(title: '🚇 ${t.name}'),
+            infoWindow: InfoWindow(title: '🚇 ${t.name}', snippet: t.distanceDisplay),
+            onTap: () => controller.selectPoi(SelectedPoiModel(
+              name: t.name,
+              type: 'Metro / Transport Hub',
+              address: t.address,
+              distance: t.distanceDisplay,
+              openStatus: 'Public Transport Station',
+              lat: t.latitude,
+              lng: t.longitude,
+            )),
           ),
         );
       }
     }
+
+    // Add Public Places / Safe Commercial Hub Markers if enabled
+    if (state.showActivePlaces && state.nearbyHelp != null) {
+      for (final p in state.nearbyHelp!.activePlaces) {
+        markers.add(
+          Marker(
+            markerId: MarkerId('place_${p.id}'),
+            position: LatLng(p.latitude, p.longitude),
+            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
+            infoWindow: InfoWindow(title: '🏢 ${p.name}', snippet: p.address),
+            onTap: () => controller.selectPoi(SelectedPoiModel(
+              name: p.name,
+              type: 'Public Place',
+              address: p.address,
+              distance: p.distanceDisplay,
+              openStatus: 'Well-lit Public Location',
+              lat: p.latitude,
+              lng: p.longitude,
+            )),
+          ),
+        );
+      }
+    }
+
+    // Diagnostic logging for marker creation
+    DevLog.map('[MAP] marker creation: ${markers.length} markers created');
 
     // Build Circles (Safety Zones)
     final circles = <Circle>{};
@@ -248,21 +318,24 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               target: userLoc,
               zoom: 14.5,
             ),
-              style: _darkMapStyle,
-              myLocationEnabled: true,
-              myLocationButtonEnabled: false,
-              zoomControlsEnabled: false,
-              compassEnabled: false,
-              markers: markers,
-              polylines: polylines,
-              circles: circles,
-              onMapCreated: (ctrl) {
-                _mapController = ctrl;
-                if (state.routePlan != null) {
-                  _fitRouteBounds(state.routePlan!);
-                }
-              },
-            ),
+            style: _darkMapStyle,
+            myLocationEnabled: true,
+            myLocationButtonEnabled: false,
+            zoomControlsEnabled: false,
+            compassEnabled: true,
+            markers: markers,
+            polylines: polylines,
+            circles: circles,
+            onMapCreated: (ctrl) {
+              _mapController = ctrl;
+              // ignore: avoid_print
+              print('[MAP] GoogleMap initialized successfully');
+              DevLog.map('[MAP] GoogleMap initialized successfully');
+              if (state.routePlan != null) {
+                _fitRouteBounds(state.routePlan!);
+              }
+            },
+          ),
 
             // Top Header: Search Bar & Floating POI Layer Filter Chips
             SafeArea(
@@ -338,6 +411,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                             isActive: state.showStations,
                             activeColor: AppColors.tertiary,
                             onTap: controller.toggleStations,
+                          ),
+                          const SizedBox(width: 6),
+                          _LayerChip(
+                            label: 'Public Places',
+                            icon: Icons.store_mall_directory_outlined,
+                            isActive: state.showActivePlaces,
+                            activeColor: AppColors.primaryPulse,
+                            onTap: controller.toggleActivePlaces,
                           ),
                         ],
                       ),
@@ -447,12 +528,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     if (state.errorMessage != null) ...[
                       const SizedBox(height: AppSpacing.sm),
                       GlassCard(
-                        color: AppColors.errorContainer.withValues(alpha: 0.92),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        color: AppColors.errorContainer.withValues(alpha: 0.94),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         child: Row(
                           children: [
-                            const Icon(Icons.error_outline, size: 16, color: AppColors.onErrorContainer),
-                            const SizedBox(width: 6),
+                            const Icon(Icons.error_outline, size: 18, color: AppColors.onErrorContainer),
+                            const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 state.errorMessage!,
@@ -461,6 +542,22 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
+                            if (state.destination != null)
+                              TextButton(
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                                  minimumSize: const Size(40, 28),
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                onPressed: () {
+                                  controller.planRouteTo(
+                                    destLat: state.destination!.lat,
+                                    destLng: state.destination!.lng,
+                                    destName: state.destinationName.isNotEmpty ? state.destinationName : 'Destination',
+                                  );
+                                },
+                                child: const Text('Retry', style: TextStyle(color: AppColors.onErrorContainer, fontWeight: FontWeight.bold, fontSize: 11)),
+                              ),
                             IconButton(
                               icon: const Icon(Icons.close, size: 16, color: AppColors.onErrorContainer),
                               onPressed: controller.clearRoute,
@@ -476,21 +573,83 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               ),
             ),
 
+            // Floating Map Controls (Recenter Route, My Location, Zoom In, Zoom Out)
+            Positioned(
+              right: AppSpacing.gutter,
+              top: MediaQuery.paddingOf(context).top + 130,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (state.routePlan != null) ...[
+                    _MapFloatingButton(
+                      icon: Icons.alt_route,
+                      tooltip: 'Recenter Route',
+                      onPressed: () => _fitRouteBounds(state.routePlan!),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                  _MapFloatingButton(
+                    icon: Icons.my_location,
+                    tooltip: 'My Location',
+                    onPressed: () async {
+                      await controller.refreshLocation();
+                      if (state.userLocation != null && _mapController != null) {
+                        _mapController!.animateCamera(
+                          CameraUpdate.newLatLngZoom(
+                            LatLng(state.userLocation!.lat, state.userLocation!.lng),
+                            16,
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  _MapFloatingButton(
+                    icon: Icons.add,
+                    tooltip: 'Zoom In',
+                    onPressed: () => _mapController?.animateCamera(CameraUpdate.zoomIn()),
+                  ),
+                  const SizedBox(height: 6),
+                  _MapFloatingButton(
+                    icon: Icons.remove,
+                    tooltip: 'Zoom Out',
+                    onPressed: () => _mapController?.animateCamera(CameraUpdate.zoomOut()),
+                  ),
+                ],
+              ),
+            ),
+
             // Bottom Sheets / Route Comparison Card / Detail Sheets
             Align(
               alignment: Alignment.bottomCenter,
               child: Padding(
-                padding: EdgeInsets.fromLTRB(
+                padding: const EdgeInsets.fromLTRB(
                   AppSpacing.gutter,
                   0,
                   AppSpacing.gutter,
-                  MediaQuery.paddingOf(context).bottom + AppSpacing.bottomNavHeight + AppSpacing.sm,
+                  AppSpacing.md,
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    // If a POI is Selected
+                    if (state.selectedPoi != null) ...[
+                      _PoiDetailCard(
+                        poi: state.selectedPoi!,
+                        onClose: controller.clearSelectedPoi,
+                        onRouteTo: () {
+                          final poi = state.selectedPoi!;
+                          controller.planRouteTo(
+                            destLat: poi.lat,
+                            destLng: poi.lng,
+                            destName: poi.name,
+                          );
+                          controller.clearSelectedPoi();
+                        },
+                      ).animate().slideY(begin: 0.2, duration: 250.ms).fadeIn(),
+                    ]
                     // If a Safety Zone is Selected
-                    if (state.selectedZone != null) ...[
+                    else if (state.selectedZone != null) ...[
                       SafetyZoneDetailSheet(
                         zone: state.selectedZone!,
                         onClose: controller.clearSelectedZone,
@@ -712,6 +871,172 @@ class _QuickDestChip extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _MapFloatingButton extends StatelessWidget {
+  const _MapFloatingButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.surfaceContainerHighest.withValues(alpha: 0.94),
+      shape: const CircleBorder(),
+      elevation: 4,
+      child: InkWell(
+        onTap: onPressed,
+        customBorder: const CircleBorder(),
+        child: Tooltip(
+          message: tooltip,
+          child: Padding(
+            padding: const EdgeInsets.all(10),
+            child: Icon(icon, color: AppColors.onSurface, size: 20),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PoiDetailCard extends StatelessWidget {
+  const _PoiDetailCard({
+    required this.poi,
+    required this.onClose,
+    required this.onRouteTo,
+  });
+
+  final SelectedPoiModel poi;
+  final VoidCallback onClose;
+  final VoidCallback onRouteTo;
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryPulse.withValues(alpha: 0.15),
+                  borderRadius: AppRadius.borderMd,
+                ),
+                child: const Icon(AppIcons.location, color: AppColors.primaryPulse, size: 20),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      poi.name,
+                      style: AppTextStyles.bodyMd.copyWith(fontWeight: FontWeight.w800, fontSize: 16),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      poi.type,
+                      style: AppTextStyles.labelSm.copyWith(color: AppColors.primaryPulse, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close, size: 20, color: AppColors.onSurfaceVariant),
+                onPressed: onClose,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          if (poi.address != null && poi.address!.isNotEmpty) ...[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.place_outlined, size: 14, color: AppColors.onSurfaceVariant),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    poi.address!,
+                    style: AppTextStyles.labelSm.copyWith(color: AppColors.onSurfaceVariant),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+          ],
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: 4,
+            children: [
+              if (poi.distance != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: const BoxDecoration(
+                    color: AppColors.surfaceContainerHigh,
+                    borderRadius: AppRadius.borderSm,
+                  ),
+                  child: Text(
+                    '📍 ${poi.distance}',
+                    style: AppTextStyles.labelSm.copyWith(color: AppColors.onSurface, fontSize: 11),
+                  ),
+                ),
+              if (poi.openStatus != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.tertiary.withValues(alpha: 0.15),
+                    borderRadius: AppRadius.borderSm,
+                  ),
+                  child: Text(
+                    '🕒 ${poi.openStatus}',
+                    style: AppTextStyles.labelSm.copyWith(color: AppColors.tertiary, fontSize: 11, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              if (poi.phone != null && poi.phone!.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.police.withValues(alpha: 0.15),
+                    borderRadius: AppRadius.borderSm,
+                  ),
+                  child: Text(
+                    '📞 ${poi.phone}',
+                    style: AppTextStyles.labelSm.copyWith(color: AppColors.police, fontSize: 11, fontWeight: FontWeight.w600),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryPulse,
+                foregroundColor: Colors.white,
+                shape: const RoundedRectangleBorder(borderRadius: AppRadius.borderFull),
+              ),
+              icon: const Icon(Icons.directions_outlined, size: 18),
+              label: const Text('Plan Safe Route Here'),
+              onPressed: onRouteTo,
+            ),
+          ),
+        ],
       ),
     );
   }

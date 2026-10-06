@@ -245,16 +245,26 @@ class HeartbeatRequest {
 // ─── Generic response ─────────────────────────────────────────────────────────
 
 class ApiMessageResponse {
-  const ApiMessageResponse({required this.success, required this.message});
+  const ApiMessageResponse({
+    required this.success,
+    required this.message,
+    this.deliveryDetails = const [],
+  });
 
   final bool success;
   final String message;
+  final List<NotificationDeliveryItemDto> deliveryDetails;
 
-  factory ApiMessageResponse.fromJson(Map<String, dynamic> json) =>
-      ApiMessageResponse(
-        success: json['success'] as bool? ?? true,
-        message: json['message'] as String? ?? '',
-      );
+  factory ApiMessageResponse.fromJson(Map<String, dynamic> json) {
+    final rawDetails = json['delivery_details'] as List<dynamic>? ?? [];
+    return ApiMessageResponse(
+      success: json['success'] as bool? ?? true,
+      message: json['message'] as String? ?? '',
+      deliveryDetails: rawDetails
+          .map((d) => NotificationDeliveryItemDto.fromJson(d as Map<String, dynamic>))
+          .toList(),
+    );
+  }
 }
 
 // ─── Advanced Safety Intelligence DTOs ────────────────────────────────────────
@@ -461,4 +471,59 @@ class TelegramLinkResponseDto {
         botUsername: json['bot_username'] as String? ?? '',
         expiresInMinutes: (json['expires_in_minutes'] as num?)?.toInt() ?? 10,
       );
+}
+
+class NotificationDeliveryItemDto {
+  const NotificationDeliveryItemDto({
+    required this.contactName,
+    required this.channel,
+    required this.deliveryStatus,
+    this.detail,
+  });
+
+  final String contactName;
+  final String channel;
+  final String deliveryStatus; // sent, failed, unconfigured
+  final String? detail;
+
+  String get status => deliveryStatus;
+  String get recipientName => contactName;
+  String? get error => detail;
+
+  factory NotificationDeliveryItemDto.fromJson(Map<String, dynamic> json) =>
+      NotificationDeliveryItemDto(
+        contactName: json['contact_name'] as String? ?? 'Trusted Contact',
+        channel: json['channel'] as String? ?? '',
+        deliveryStatus: json['delivery_status'] as String? ?? 'unknown',
+        detail: json['detail'] as String?,
+      );
+}
+
+class SosResponseDto {
+  const SosResponseDto({
+    required this.success,
+    required this.message,
+    this.eventId,
+    this.status,
+    this.deliveryDetails = const [],
+  });
+
+  final bool success;
+  final String message;
+  final String? eventId;
+  final String? status;
+  final List<NotificationDeliveryItemDto> deliveryDetails;
+
+  factory SosResponseDto.fromJson(Map<String, dynamic> json) {
+    final rawList = json['delivery_details'] as List<dynamic>? ?? [];
+    return SosResponseDto(
+      success: json['success'] as bool? ?? false,
+      message: json['message'] as String? ?? '',
+      eventId: json['event_id'] as String?,
+      status: json['status'] as String?,
+      deliveryDetails: rawList
+          .map((d) => NotificationDeliveryItemDto.fromJson(d as Map<String, dynamic>))
+          .toList(),
+    );
+  }
 }

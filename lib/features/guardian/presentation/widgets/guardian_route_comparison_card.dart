@@ -38,7 +38,7 @@ class GuardianRouteComparisonCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surfaceContainerHighest.withValues(alpha: 0.96),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        borderRadius: AppRadius.borderXxl,
         border: Border.all(color: AppColors.primaryPulse.withValues(alpha: 0.35)),
         boxShadow: const [
           BoxShadow(
@@ -193,15 +193,20 @@ class GuardianRouteComparisonCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      '${active.durationMinutes} min • ${active.distanceKm} km',
-                      style: AppTextStyles.headlineMd.copyWith(
-                        color: AppColors.primaryPulse,
-                        fontSize: 20,
+                    Flexible(
+                      child: Text(
+                        '${active.durationMinutes} min • ${active.distanceKm} km',
+                        style: AppTextStyles.headlineMd.copyWith(
+                          color: AppColors.primaryPulse,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    const Spacer(),
+                    const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
@@ -209,7 +214,7 @@ class GuardianRouteComparisonCard extends StatelessWidget {
                         borderRadius: AppRadius.borderFull,
                       ),
                       child: Text(
-                        'Safety: ${active.safetyScore}/100 · Risk: ${(100 - active.safetyScore)}% (Estimated)',
+                        'Safety: ${active.safetyScore}/100',
                         style: AppTextStyles.labelSm.copyWith(
                           color: AppColors.white,
                           fontWeight: FontWeight.w700,
@@ -219,9 +224,33 @@ class GuardianRouteComparisonCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 6),
-                Text(
-                  active.reason.isNotEmpty ? active.reason : plan.reason,
-                  style: AppTextStyles.labelSm.copyWith(color: AppColors.onSurfaceVariant),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: const BoxDecoration(
+                        color: AppColors.surfaceContainerHigh,
+                        borderRadius: AppRadius.borderSm,
+                      ),
+                      child: Text(
+                        'Est. Risk: ${(100 - active.safetyScore)}%',
+                        style: AppTextStyles.labelSm.copyWith(
+                          color: AppColors.onSurfaceVariant,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        active.reason.isNotEmpty ? active.reason : plan.reason,
+                        style: AppTextStyles.labelSm.copyWith(color: AppColors.onSurfaceVariant),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

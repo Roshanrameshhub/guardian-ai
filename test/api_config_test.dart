@@ -47,5 +47,11 @@ void main() {
       ApiConfig.setBaseUrl('https://guardian-ai-t55s.onrender.com/api/v1/');
       expect(ApiConfig.baseUrl, 'https://guardian-ai-t55s.onrender.com/api/v1');
     });
+
+    test('Default resolution without overrides points to Render production backend', () {
+      ApiConfig.resetBaseUrl();
+      expect(ApiConfig.baseUrl, 'https://guardian-ai-t55s.onrender.com/api/v1');
+      expect(ApiConfig.resolutionSource, 'Default Production Deployed (Render)');
+    });
   });
 }

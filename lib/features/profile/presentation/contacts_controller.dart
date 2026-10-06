@@ -133,6 +133,19 @@ class ContactsController extends StateNotifier<AsyncValue<void>> {
       rethrow;
     }
   }
+
+  Future<ApiMessageResponse> sendTestTelegram(String contactId) async {
+    try {
+      DevLog.contact('Dispatching test Telegram alert for contact id: $contactId');
+      final repo = _ref.read(contactRepositoryProvider);
+      final response = await repo.sendTestTelegram(contactId);
+      DevLog.contact('Test Telegram result: success=${response.success}, msg=${response.message}');
+      return response;
+    } catch (e) {
+      DevLog.contact('Failed to dispatch test Telegram', error: e);
+      rethrow;
+    }
+  }
 }
 
 final contactsControllerProvider =

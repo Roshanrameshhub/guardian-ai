@@ -107,6 +107,7 @@ class ContactService:
             priority=req.priority,
             emergency_notify_enabled=req.emergency_notify_enabled,
             location_share_enabled=req.location_share_enabled,
+            telegram_chat_id=req.telegram_chat_id.strip() if req.telegram_chat_id else None,
         )
         self._db.add(contact)
         await self._db.commit()
@@ -119,7 +120,10 @@ class ContactService:
         contact = await self.get_contact(user_id, contact_id)
         update_data = req.model_dump(exclude_none=True)
         for field, value in update_data.items():
-            setattr(contact, field, value)
+            if field == "telegram_chat_id" and isinstance(value, str) and not value.strip():
+                setattr(contact, field, None)
+            else:
+                setattr(contact, field, value)
         await self._db.commit()
         await self._db.refresh(contact)
         return contact

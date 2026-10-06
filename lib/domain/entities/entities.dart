@@ -45,6 +45,7 @@ class TrustedContactEntity {
     this.locationShareEnabled = false,
     this.priority = 1,
     this.isTelegramLinked = false,
+    this.telegramChatId,
   });
 
   final String id;
@@ -57,6 +58,7 @@ class TrustedContactEntity {
   final bool locationShareEnabled;
   final int priority;
   final bool isTelegramLinked;
+  final String? telegramChatId;
 
   TrustedContactEntity copyWith({
     String? id,
@@ -69,6 +71,7 @@ class TrustedContactEntity {
     bool? locationShareEnabled,
     int? priority,
     bool? isTelegramLinked,
+    String? telegramChatId,
   }) {
     return TrustedContactEntity(
       id: id ?? this.id,
@@ -81,6 +84,7 @@ class TrustedContactEntity {
       locationShareEnabled: locationShareEnabled ?? this.locationShareEnabled,
       priority: priority ?? this.priority,
       isTelegramLinked: isTelegramLinked ?? this.isTelegramLinked,
+      telegramChatId: telegramChatId ?? this.telegramChatId,
     );
   }
 }
@@ -312,6 +316,10 @@ class SafetyZoneEntity {
   final String dataStatus;
   final String sourceBasis;
   final String disclaimer;
+
+  String get areaName => place.isNotEmpty ? place : anchorArea;
+  String get safetyLevel => demoSafetyLabel;
+  String get riskFactorSummary => recommendation;
 
   String get riskCategoryLabel {
     if (demoSafetyScore >= 75) return 'Lower Risk';

@@ -221,13 +221,13 @@ class GuardianRiskEngine {
     RiskLevelCategory category;
     String recommendation;
 
-    if (finalRiskPercent >= 75) {
+    if (finalRiskPercent >= 80) {
       category = RiskLevelCategory.critical;
       recommendation = 'Critical safety risk. Emergency verification active.';
-    } else if (finalRiskPercent >= 50) {
+    } else if (finalRiskPercent >= 60) {
       category = RiskLevelCategory.high;
       recommendation = 'Elevated situational risk. Stay on illuminated main roads.';
-    } else if (finalRiskPercent >= 25) {
+    } else if (finalRiskPercent >= 30) {
       category = RiskLevelCategory.moderate;
       recommendation = 'Moderate risk detected. Guardian Mode monitoring active.';
     } else {

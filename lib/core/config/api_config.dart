@@ -29,6 +29,11 @@ import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 /// flutter build apk --release --dart-define=API_BASE_URL=https://guardian-ai-t55s.onrender.com
 /// ```
 abstract final class ApiConfig {
+  // ── Default Deployed Backend (Production) ───────────────────────────────
+  
+  static const String defaultProductionUrl =
+      'https://guardian-ai-t55s.onrender.com';
+
   // ── dart-define injected values ──────────────────────────────────────────
   
   static const String _dartDefineHost =
@@ -45,6 +50,9 @@ abstract final class ApiConfig {
 
   static const String _dartDefinePrefix =
       String.fromEnvironment('API_PREFIX', defaultValue: '/api/v1');
+
+  static const bool _dartDefineUseLocal =
+      bool.fromEnvironment('USE_LOCAL_BACKEND', defaultValue: false);
 
   // ── Runtime override (kept for backward-compatibility & testing) ─────────
 
@@ -74,13 +82,16 @@ abstract final class ApiConfig {
     if (_dartDefineHost.isNotEmpty) {
       return '--dart-define=API_HOST';
     }
-    if (kIsWeb) return 'Platform Default (Web Localhost)';
-    try {
-      if (Platform.isAndroid) {
-        return 'Android Default (127.0.0.1 via adb reverse)';
-      }
-    } catch (_) {}
-    return 'Platform Default (Localhost)';
+    if (_dartDefineUseLocal) {
+      if (kIsWeb) return 'Explicit Local Dev (Web Localhost)';
+      try {
+        if (Platform.isAndroid) {
+          return 'Explicit Local Dev (127.0.0.1 via adb reverse)';
+        }
+      } catch (_) {}
+      return 'Explicit Local Dev (Localhost)';
+    }
+    return 'Default Production Deployed (Render)';
   }
 
   static String get configuredHost => _dartDefineHost;
@@ -106,8 +117,14 @@ abstract final class ApiConfig {
       return url;
     }
 
-    final url = _normalizeUrl(_platformDefaultHost());
-    _debugLog('platform default', url);
+    if (_dartDefineUseLocal) {
+      final url = _normalizeUrl(_platformDefaultHost());
+      _debugLog('explicit local dev', url);
+      return url;
+    }
+
+    final url = _normalizeUrl(defaultProductionUrl);
+    _debugLog('default production', url);
     return url;
   }
 

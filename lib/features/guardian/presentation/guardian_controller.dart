@@ -5,22 +5,31 @@ import '../../../core/utils/dev_log.dart';
 import '../../../data/dto/api_dto.dart';
 import '../../../domain/entities/entities.dart';
 import '../../../providers/repository_providers.dart';
+import '../../home/presentation/home_controller.dart';
 
 final guardianRiskReportProvider = Provider<RiskAssessmentReport>((ref) {
   final riskEngine = ref.watch(guardianRiskEngineProvider);
   final engine = ref.watch(guardianEngineProvider);
   final voiceService = ref.watch(voiceServiceProvider);
   final sensorService = ref.watch(sensorServiceProvider);
+  final dashboard = ref.watch(dashboardProvider).valueOrNull;
 
   // Compute live multi-signal risk
+  final hasFall = sensorService.fallDetector.fallDetected;
+  final hasShake = sensorService.liveAccelMagnitude > 22.0;
+  final lastDev = engine.deviationDetector.lastDistanceMeters;
+
   return riskEngine.evaluateRisk(
     currentTime: DateTime.now(),
-    locationSafetyScore: 82.0, // Baseline Chennai safety dataset score
+    locationSafetyScore: dashboard?.safetyScore.toDouble() ?? 82.0,
     batteryPercent: engine.batteryPercent,
-    hasMotionAnomaly: sensorService.liveAccelMagnitude > 22.0,
+    hasMotionAnomaly: hasFall || hasShake,
     motionAnomalyPeak: sensorService.liveAccelMagnitude,
     hasVoiceDistress: voiceService.matchedKeywords.isNotEmpty,
     voiceUrgency: voiceService.latestUrgency,
+    routeDeviationMeters: lastDev > 50 ? lastDev : null,
+    stationarySeconds: engine.stationarySeconds,
+    weatherCondition: dashboard?.weather.condition,
   );
 });
 

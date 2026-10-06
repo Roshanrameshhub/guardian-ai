@@ -79,6 +79,7 @@ class GuardianEngine with WidgetsBindingObserver {
   Position? get currentPosition => _currentPosition;
   int get batteryPercent => _batteryPercent;
   double get currentSpeedKmh => _currentSpeedKmh;
+  int get stationarySeconds => _stationarySeconds;
   String? get activeJourneyId => _activeJourneyId;
   List<SafetyEventModel> get events => List.unmodifiable(_events);
   Stream<SafetyEventModel> get safetyEventStream => _eventStreamController.stream;
@@ -188,6 +189,7 @@ class GuardianEngine with WidgetsBindingObserver {
           gpsSpeedKmh: _currentSpeedKmh,
           recentAccelSamples: const [9.8, 9.81, 9.8, 9.79],
         );
+        _stationarySeconds = statReport.stationarySeconds;
         if (statReport.isThresholdBreached) {
           logEvent(
             type: SafetyEventType.prolongedStop,
@@ -217,7 +219,6 @@ class GuardianEngine with WidgetsBindingObserver {
           title: '⚠ POSSIBLE FALL DETECTED',
           message: 'Multi-stage fall signature detected with post-impact stillness.',
         );
-        showEmergencySosModal(triggerSource: 'fall_detected');
       } else if (anomaly == MotionEventType.phoneDrop) {
         logEvent(
           type: SafetyEventType.phoneDrop,
@@ -232,7 +233,6 @@ class GuardianEngine with WidgetsBindingObserver {
           title: '⚠ UNUSUAL MOVEMENT DETECTED',
           message: 'High acceleration shake peak recorded by accelerometer.',
         );
-        showEmergencySosModal(triggerSource: 'shake_detected');
       }
     });
 
@@ -246,7 +246,6 @@ class GuardianEngine with WidgetsBindingObserver {
         title: '⚠ POSSIBLE DISTRESS',
         message: '"$phrase" detected.',
       );
-      showEmergencySosModal(triggerSource: 'voice_distress');
     });
 
     // 7. Start risk-calibrated periodic heartbeat
@@ -319,6 +318,7 @@ class GuardianEngine with WidgetsBindingObserver {
 
     _sensorService.stopMonitoring();
     _voiceService.stopListening();
+    _stationarySeconds = 0;
 
     try {
       return await _guardianRepo.stopGuardian();

@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from datetime import timedelta
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.core.exceptions import BadRequestError, NotFoundError
 from app.models.contact import TrustedContact
@@ -15,7 +15,11 @@ from app.models.emergency import (
     NotificationDeliveryStatus,
 )
 from app.models.guardian import GuardianSession, GuardianSessionStatus
-from app.schemas.emergency import EmergencyResponse, SosRequest
+from app.schemas.emergency import (
+    EmergencyResponse,
+    NotificationDeliveryItem,
+    SosRequest,
+)
 
 
 class EmergencyService:
@@ -28,12 +32,11 @@ class EmergencyService:
         1. Create emergency event
         2. Load trusted contacts
         3. Create notification records (queued)
-        4. Attempt delivery (push/SMS/email)
+        4. Attempt delivery (Telegram/SMS/Push)
         5. Update delivery status (never lie about failures)
-        6. Return accurate status
+        6. Return accurate status with itemized delivery details
         """
         # Check for very recent duplicate SOS (idempotency — within 20 seconds)
-        from datetime import timedelta
         cutoff = datetime.now(tz=timezone.utc) - timedelta(seconds=20)
         recent = await self._db.scalar(
             select(EmergencyEvent).where(
@@ -50,6 +53,7 @@ class EmergencyService:
                 message="Emergency alert already active.",
                 event_id=recent.id,
                 status=recent.status.value,
+                delivery_details=[],
             )
 
         # Get active guardian session
@@ -121,27 +125,27 @@ class EmergencyService:
                             )
                         )
 
-                # 3. Queue Telegram
-                if contact.telegram_chat_id:
-                    notification_records.append(
-                        EmergencyNotification(
-                            event_id=event.id,
-                            contact_id=contact.id,
-                            channel="telegram",
-                            recipient=contact.telegram_chat_id,
-                            delivery_status=NotificationDeliveryStatus.queued,
-                        )
+            # 3. Queue Telegram
+            if contact.telegram_chat_id:
+                notification_records.append(
+                    EmergencyNotification(
+                        event_id=event.id,
+                        contact_id=contact.id,
+                        channel="telegram",
+                        recipient=contact.telegram_chat_id,
+                        delivery_status=NotificationDeliveryStatus.queued,
                     )
+                )
 
         self._db.add_all(notification_records)
 
         event.status = EmergencyStatus.notifications_queued
         await self._db.flush()
 
-
         # Attempt delivery (async, non-blocking)
-        # In production this would be delegated to a background worker
-        delivery_result = await self._attempt_delivery(event, notification_records, req)
+        delivery_result, delivery_details = await self._attempt_delivery(
+            event, notification_records, req, list(contacts)
+        )
 
         event.status = EmergencyStatus.active
         await self._db.commit()
@@ -152,6 +156,7 @@ class EmergencyService:
             message=delivery_result,
             event_id=event.id,
             status=event.status.value,
+            delivery_details=delivery_details,
         )
 
     async def cancel_sos(self, user_id: str, event_id: str) -> EmergencyResponse:
@@ -166,6 +171,7 @@ class EmergencyService:
                 message="Emergency already resolved.",
                 event_id=event.id,
                 status=event.status.value,
+                delivery_details=[],
             )
         event.status = EmergencyStatus.cancelled
         event.cancelled_at = datetime.now(tz=timezone.utc)
@@ -175,6 +181,7 @@ class EmergencyService:
             message="Emergency alert cancelled.",
             event_id=event.id,
             status=event.status.value,
+            delivery_details=[],
         )
 
     async def get_event(self, user_id: str, event_id: str) -> EmergencyResponse:
@@ -188,6 +195,7 @@ class EmergencyService:
             message="",
             event_id=event.id,
             status=event.status.value,
+            delivery_details=[],
         )
 
     async def _attempt_delivery(
@@ -195,19 +203,23 @@ class EmergencyService:
         event: EmergencyEvent,
         notifications: list[EmergencyNotification],
         req: SosRequest,
-    ) -> str:
+        contacts: list[TrustedContact],
+    ) -> tuple[str, list[NotificationDeliveryItem]]:
         """
         Attempt to deliver notifications.
         Updates delivery_status honestly — never claims success when failed.
+        Returns summary message and itemized delivery report per contact/channel.
         """
         from app.core.config import get_settings
         settings = get_settings()
 
         delivered = 0
         failed = 0
+        details: list[NotificationDeliveryItem] = []
+        contact_map = {c.id: c.name for c in contacts}
 
-        if not notifications:
-            return "SOS recorded. No emergency contacts configured."
+        if not contacts:
+            return "SOS recorded. No emergency contacts configured.", []
 
         from app.services.sms_provider import TwilioSmsProvider
         from app.services.fcm_provider import FcmProvider
@@ -217,8 +229,12 @@ class EmergencyService:
         fcm_provider = FcmProvider()
         telegram_provider = TelegramProvider()
 
+        # Track contacts who had a telegram notification queued
+        contacts_with_telegram = set()
+
         for notif in notifications:
             success = False
+            contact_name = contact_map.get(notif.contact_id, "Trusted Contact")
             
             if notif.channel == "sms":
                 if settings.has_sms:
@@ -232,8 +248,16 @@ class EmergencyService:
                     if not success:
                         notif.failure_reason = reason_or_sid
                 else:
-                    # Log that SMS is not configured — do NOT claim it was sent
                     notif.failure_reason = "SMS provider not configured (Twilio credentials required)"
+
+                details.append(
+                    NotificationDeliveryItem(
+                        contact_name=contact_name,
+                        channel="SMS",
+                        delivery_status="sent" if success else ("unconfigured" if not settings.has_sms else "failed"),
+                        detail="Sent via SMS" if success else notif.failure_reason,
+                    )
+                )
             
             elif notif.channel == "push":
                 if settings.has_push:
@@ -253,7 +277,17 @@ class EmergencyService:
                 else:
                     notif.failure_reason = "FCM push not configured (Firebase service account required)"
 
+                details.append(
+                    NotificationDeliveryItem(
+                        contact_name=contact_name,
+                        channel="Push Notification",
+                        delivery_status="sent" if success else ("unconfigured" if not settings.has_push else "failed"),
+                        detail="Delivered to device" if success else notif.failure_reason,
+                    )
+                )
+
             elif notif.channel == "telegram":
+                contacts_with_telegram.add(notif.contact_id)
                 if settings.has_telegram:
                     success, reason = await telegram_provider.send_emergency_message(
                         chat_id=notif.recipient,
@@ -264,8 +298,16 @@ class EmergencyService:
                     if not success:
                         notif.failure_reason = reason
                 else:
-                    notif.failure_reason = "Telegram Bot not configured"
+                    notif.failure_reason = "Telegram Bot not configured (TELEGRAM_BOT_TOKEN required)"
 
+                details.append(
+                    NotificationDeliveryItem(
+                        contact_name=contact_name,
+                        channel="Telegram",
+                        delivery_status="sent" if success else ("unconfigured" if not settings.has_telegram else "failed"),
+                        detail="Telegram sent" if success else notif.failure_reason,
+                    )
+                )
 
             if success:
                 notif.delivery_status = NotificationDeliveryStatus.sent
@@ -275,14 +317,27 @@ class EmergencyService:
                 notif.delivery_status = NotificationDeliveryStatus.failed
                 failed += 1
 
+        # Check for contacts without Telegram configured
+        for c in contacts:
+            if c.id not in contacts_with_telegram:
+                details.append(
+                    NotificationDeliveryItem(
+                        contact_name=c.name,
+                        channel="Telegram",
+                        delivery_status="unconfigured",
+                        detail="Telegram not connected",
+                    )
+                )
+
         if delivered > 0 and failed == 0:
-            return f"Emergency alert sent to {delivered} contact(s)."
-        if delivered > 0:
-            return f"Emergency alert sent to {delivered} contact(s). {failed} delivery failed."
-        return (
-            "SOS recorded in system. "
-            "Notification delivery requires provider configuration. "
-            f"({len(notifications)} contact(s) not notified)"
-        )
+            summary = f"Emergency alert sent to {delivered} contact(s)."
+        elif delivered > 0:
+            summary = f"Emergency alert sent to {delivered} contact(s). {failed} delivery failed."
+        else:
+            summary = (
+                "SOS recorded in system. "
+                "Notification delivery requires provider configuration. "
+                f"({len(notifications)} notification(s) not delivered)"
+            )
 
-
+        return summary, details

@@ -74,14 +74,19 @@ class MultiStageFallDetector {
   double _peakGyro = 0.0;
   double _lastGpsSpeedKmh = 0.0;
 
+  DateTime? _lastFallSuspectedTime;
+  bool get fallDetected =>
+      _lastFallSuspectedTime != null &&
+      DateTime.now().difference(_lastFallSuspectedTime!) < const Duration(seconds: 45);
+
   final List<double> _postImpactWindow = [];
   Timer? _immobilityTimer;
 
   // Calibration thresholds
-  static const double _freefallThreshold = 5.5; // m/s² (~0.55g)
-  static const double _impactThreshold = 21.0; // m/s² (~2.15g)
-  static const double _gyroRotationThreshold = 2.2; // rad/s
-  static const double _stillnessVarianceLimit = 3.2; // m/s² std dev for post-fall resting
+  static const double _freefallThreshold = 4.0; // m/s² (~0.4g)
+  static const double _impactThreshold = 25.0; // m/s² (~2.5g)
+  static const double _gyroRotationThreshold = 4.0; // rad/s
+  static const double _stillnessVarianceLimit = 1.8; // m/s² std dev for post-fall resting
 
   /// Machine learning sensitivity multiplier calibrated dynamically from user false alarm feedback.
   /// (e.g. 1.10 = 10% higher threshold to prevent repeated false positives).
@@ -243,6 +248,7 @@ class MultiStageFallDetector {
     onReportGenerated?.call(report);
 
     if (report.isFallSuspected) {
+      _lastFallSuspectedTime = now;
       onFallSuspected?.call(report);
     }
 

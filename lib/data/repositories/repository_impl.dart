@@ -36,7 +36,10 @@ TrustedContactEntity _contactFromJson(Map<String, dynamic> json) =>
       emergencyNotifyEnabled: json['emergency_notify_enabled'] as bool? ?? true,
       locationShareEnabled: json['location_share_enabled'] as bool? ?? false,
       priority: (json['priority'] as num?)?.toInt() ?? 1,
-      isTelegramLinked: json['is_telegram_linked'] as bool? ?? false,
+      isTelegramLinked: json['is_telegram_linked'] as bool? ??
+          (json['telegram_chat_id'] != null &&
+              (json['telegram_chat_id'] as String).isNotEmpty),
+      telegramChatId: json['telegram_chat_id'] as String?,
     );
 
 WeatherEntity _weatherFromJson(Map<String, dynamic> json) => WeatherEntity(
@@ -422,6 +425,8 @@ class ContactRepositoryImpl implements ContactRepository {
       'priority': contact.priority,
       'emergency_notify_enabled': contact.emergencyNotifyEnabled,
       'location_share_enabled': contact.locationShareEnabled,
+      if (contact.telegramChatId != null && contact.telegramChatId!.isNotEmpty)
+        'telegram_chat_id': contact.telegramChatId,
     });
     return _contactFromJson(json);
   }
@@ -436,6 +441,7 @@ class ContactRepositoryImpl implements ContactRepository {
       'priority': contact.priority,
       'emergency_notify_enabled': contact.emergencyNotifyEnabled,
       'location_share_enabled': contact.locationShareEnabled,
+      'telegram_chat_id': contact.telegramChatId ?? '',
     });
     return _contactFromJson(json);
   }
@@ -449,6 +455,12 @@ class ContactRepositoryImpl implements ContactRepository {
   Future<TelegramLinkResponseDto> generateTelegramLink(String contactId) async {
     final json = await _api.post('${ApiConstants.contacts}/$contactId/telegram-link');
     return TelegramLinkResponseDto.fromJson(json);
+  }
+
+  @override
+  Future<ApiMessageResponse> sendTestTelegram(String contactId) async {
+    final json = await _api.post('${ApiConstants.contacts}/$contactId/test-telegram');
+    return ApiMessageResponse.fromJson(json);
   }
 }
 
@@ -769,6 +781,10 @@ GuardianRoutePlanEntity _guardianRoutePlanFromJson(Map<String, dynamic> json) {
   final timeJson = json['travel_time'] as Map<String, dynamic>? ?? {};
   final distJson = json['distance'] as Map<String, dynamic>? ?? {};
 
+  final recAlt = _guardianAlternativeFromJson(recRoute);
+  final parsedAlternatives = altList.map((a) => _guardianAlternativeFromJson(a as Map<String, dynamic>)).toList();
+  final effectiveAlternatives = parsedAlternatives.isNotEmpty ? parsedAlternatives : [recAlt];
+
   return GuardianRoutePlanEntity(
     originLat: (origin['latitude'] as num?)?.toDouble() ?? 0.0,
     originLng: (origin['longitude'] as num?)?.toDouble() ?? 0.0,
@@ -777,8 +793,8 @@ GuardianRoutePlanEntity _guardianRoutePlanFromJson(Map<String, dynamic> json) {
     destinationName: dest['name'] as String? ?? 'Destination',
     isNight: json['is_night'] as bool? ?? false,
     evaluationPeriod: json['evaluation_period'] as String? ?? 'Day',
-    recommendedRoute: _guardianAlternativeFromJson(recRoute),
-    alternatives: altList.map((a) => _guardianAlternativeFromJson(a as Map<String, dynamic>)).toList(),
+    recommendedRoute: recAlt,
+    alternatives: effectiveAlternatives,
     safetyScore: (json['safety_score'] as num?)?.toInt() ?? 80,
     riskLevel: json['risk_level'] as String? ?? 'LOW',
     riskZones: zonesList.map((z) => Map<String, dynamic>.from(z as Map)).toList(),

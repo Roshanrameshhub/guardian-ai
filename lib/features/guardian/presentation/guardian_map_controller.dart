@@ -1,10 +1,32 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:geolocator/geolocator.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../../../core/utils/dev_log.dart';
 import '../../../domain/entities/entities.dart';
 import '../../../providers/repository_providers.dart';
+
+class SelectedPoiModel {
+  const SelectedPoiModel({
+    required this.name,
+    required this.type,
+    this.distance,
+    this.address,
+    this.phone,
+    this.openStatus,
+    required this.lat,
+    required this.lng,
+  });
+
+  final String name;
+  final String type;
+  final String? distance;
+  final String? address;
+  final String? phone;
+  final String? openStatus;
+  final double lat;
+  final double lng;
+}
 
 class GuardianMapState {
   const GuardianMapState({
@@ -27,6 +49,7 @@ class GuardianMapState {
     this.errorMessage,
     this.selectedZone,
     this.selectedPolice,
+    this.selectedPoi,
     this.navigationProgress = 0.0,
   });
 
@@ -49,11 +72,14 @@ class GuardianMapState {
   final String? errorMessage;
   final SafetyZoneEntity? selectedZone;
   final PoliceStationEntity? selectedPolice;
+  final SelectedPoiModel? selectedPoi;
   final double navigationProgress;
 
   GuardianRouteAlternativeEntity? get activeRoute {
-    if (routePlan == null || routePlan!.alternatives.isEmpty) return null;
-    if (selectedAlternativeIndex < routePlan!.alternatives.length) {
+    if (routePlan == null) return null;
+    if (routePlan!.alternatives.isNotEmpty &&
+        selectedAlternativeIndex >= 0 &&
+        selectedAlternativeIndex < routePlan!.alternatives.length) {
       return routePlan!.alternatives[selectedAlternativeIndex];
     }
     return routePlan!.recommendedRoute;
@@ -79,10 +105,12 @@ class GuardianMapState {
     String? errorMessage,
     SafetyZoneEntity? selectedZone,
     PoliceStationEntity? selectedPolice,
+    SelectedPoiModel? selectedPoi,
     double? navigationProgress,
     bool clearRoute = false,
     bool clearSelectedZone = false,
     bool clearSelectedPolice = false,
+    bool clearSelectedPoi = false,
   }) {
     return GuardianMapState(
       userLocation: userLocation ?? this.userLocation,
@@ -106,6 +134,7 @@ class GuardianMapState {
       selectedZone: clearSelectedZone ? null : (selectedZone ?? this.selectedZone),
       selectedPolice:
           clearSelectedPolice ? null : (selectedPolice ?? this.selectedPolice),
+      selectedPoi: clearSelectedPoi ? null : (selectedPoi ?? this.selectedPoi),
       navigationProgress: navigationProgress ?? this.navigationProgress,
     );
   }
@@ -197,31 +226,26 @@ class GuardianMapController extends StateNotifier<GuardianMapState> {
     required String destName,
     String travelMode = 'DRIVE',
   }) async {
-    // 1. Fetch phone's real current GPS location before planning
+    // 1. Fetch phone's real current GPS location before planning, with resilient fallback
     final locService = _ref.read(locationServiceProvider);
-    Position pos;
+    double originLat = state.userLocation?.lat ?? 13.0067;
+    double originLng = state.userLocation?.lng ?? 80.2567;
     try {
-      pos = await locService.getCurrentPosition(
-        timeout: const Duration(seconds: 10),
+      final pos = await locService.getCurrentPosition(
+        timeout: const Duration(seconds: 6),
       );
+      originLat = pos.latitude;
+      originLng = pos.longitude;
+      state = state.copyWith(userLocation: LatLngPoint(originLat, originLng));
     } catch (e) {
-      DevLog.route('GPS acquisition failed: $e');
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: 'Unable to acquire accurate GPS position: $e. Please ensure location services are enabled and permissions are granted.',
-      );
-      return;
+      DevLog.route('GPS acquisition fallback to ($originLat, $originLng): $e');
     }
-
-    final userPos = LatLngPoint(pos.latitude, pos.longitude);
-    state = state.copyWith(userLocation: userPos);
-
-    final originLat = userPos.lat;
-    final originLng = userPos.lng;
 
     // Log exact requirement: [MAP] origin = CURRENT_GPS_LAT,LNG
     // ignore: avoid_print
     print('[MAP] origin = $originLat,$originLng');
+    // ignore: avoid_print
+    print('[MAP] route request: ($originLat, $originLng) -> $destName ($destLat, $destLng) via $travelMode');
     DevLog.route('[MAP] origin = $originLat,$originLng');
     DevLog.route('Planning route: ($originLat, $originLng) -> $destName ($destLat, $destLng) via $travelMode');
 
@@ -241,7 +265,21 @@ class GuardianMapController extends StateNotifier<GuardianMapState> {
         destinationName: destName,
         travelMode: travelMode,
       );
+      // ignore: avoid_print
+      print('[MAP] route response received: ${plan.alternatives.length} alternatives, score=${plan.safetyScore}');
+      // ignore: avoid_print
+      print('[MAP] decoded polyline points: ${plan.recommendedRoute.points.length}');
       DevLog.route('Safe route plan received: ${plan.alternatives.length} alternatives, score=${plan.safetyScore}');
+
+      // Handoff corridor points to GuardianEngine route watchdog
+      try {
+        final engine = _ref.read(guardianEngineProvider);
+        engine.deviationDetector.setPlannedRoute(
+          plan.recommendedRoute.points.map((p) => LatLng(p.lat, p.lng)).toList(),
+        );
+      } catch (e) {
+        DevLog.map('Handoff route to deviation detector notice: $e');
+      }
 
       state = state.copyWith(
         routePlan: plan,
@@ -250,6 +288,8 @@ class GuardianMapController extends StateNotifier<GuardianMapState> {
         isNavigating: false,
       );
     } catch (e) {
+      // ignore: avoid_print
+      print('[MAP] route calculation failed: $e');
       DevLog.route('Safe route calculation failed', error: e);
       state = state.copyWith(
         isLoading: false,
@@ -281,17 +321,44 @@ class GuardianMapController extends StateNotifier<GuardianMapState> {
   void toggleNightMode() =>
       state = state.copyWith(isNightMode: !state.isNightMode);
 
-  void selectZone(SafetyZoneEntity zone) =>
-      state = state.copyWith(selectedZone: zone);
+  void selectZone(SafetyZoneEntity zone) {
+    selectPoi(SelectedPoiModel(
+      name: zone.areaName,
+      type: 'Safety Zone (${zone.safetyLevel})',
+      address: 'Rating: ${zone.demoSafetyScore}/100',
+      distance: '${zone.radiusMeters.toStringAsFixed(0)}m radius',
+      openStatus: zone.riskFactorSummary,
+      lat: zone.latitude,
+      lng: zone.longitude,
+    ));
+    state = state.copyWith(selectedZone: zone);
+  }
 
   void clearSelectedZone() =>
       state = state.copyWith(clearSelectedZone: true);
 
-  void selectPolice(PoliceStationEntity police) =>
-      state = state.copyWith(selectedPolice: police);
+  void selectPolice(PoliceStationEntity police) {
+    selectPoi(SelectedPoiModel(
+      name: police.stationName,
+      type: 'Police Station',
+      address: police.address,
+      phone: police.contactNumber,
+      distance: police.distanceDisplay,
+      openStatus: '24/7 Emergency Service',
+      lat: police.latitude ?? 0.0,
+      lng: police.longitude ?? 0.0,
+    ));
+    state = state.copyWith(selectedPolice: police);
+  }
 
   void clearSelectedPolice() =>
       state = state.copyWith(clearSelectedPolice: true);
+
+  void selectPoi(SelectedPoiModel poi) =>
+      state = state.copyWith(selectedPoi: poi);
+
+  void clearSelectedPoi() =>
+      state = state.copyWith(clearSelectedPoi: true);
 
   void startNavigation() {
     state = state.copyWith(isNavigating: true, navigationProgress: 0.05);
@@ -318,7 +385,10 @@ class GuardianMapController extends StateNotifier<GuardianMapState> {
 
   void clearRoute() {
     stopNavigation();
-    state = state.copyWith(clearRoute: true);
+    try {
+      _ref.read(guardianEngineProvider).deviationDetector.setPlannedRoute([]);
+    } catch (_) {}
+    state = state.copyWith(clearRoute: true, clearSelectedPoi: true);
   }
 
   @override

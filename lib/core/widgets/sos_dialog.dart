@@ -10,7 +10,9 @@ import '../theme/radius.dart';
 import '../theme/spacing.dart';
 import '../theme/text_styles.dart';
 import '../../data/dto/api_dto.dart';
+import '../../features/profile/presentation/contacts_controller.dart';
 import '../../providers/repository_providers.dart';
+import '../services/telegram_notification_service.dart';
 import 'app_button.dart';
 
 enum SosDialogState {
@@ -59,7 +61,8 @@ class _EmergencySosSheet extends ConsumerStatefulWidget {
 
 class _EmergencySosSheetState extends ConsumerState<_EmergencySosSheet> {
   SosDialogState _state = SosDialogState.countdown;
-  int _secondsRemaining = 20;
+  int _secondsRemaining = 30;
+  static const int _totalSeconds = 30;
   Timer? _countdownTimer;
   String _statusMessage = '';
   String _channelStatus = '';
@@ -86,6 +89,8 @@ class _EmergencySosSheetState extends ConsumerState<_EmergencySosSheet> {
       }
     });
   }
+
+  List<NotificationDeliveryItemDto> _deliveryDetails = [];
 
   Future<void> _dispatchSos() async {
     setState(() {
@@ -116,28 +121,121 @@ class _EmergencySosSheetState extends ConsumerState<_EmergencySosSheet> {
         ),
       );
 
+      final deliveryList = List<NotificationDeliveryItemDto>.from(response.deliveryDetails);
+
+      // Verify and dispatch Telegram alert directly to trusted contacts who have Telegram configured
+      final contactsAsync = ref.read(trustedContactsProvider);
+      final contacts = contactsAsync.valueOrNull ?? [];
+      for (final contact in contacts) {
+        if (contact.emergencyNotifyEnabled &&
+            contact.telegramChatId != null &&
+            contact.telegramChatId!.trim().isNotEmpty) {
+          final alreadySent = deliveryList.any((d) =>
+              d.channel.toLowerCase() == 'telegram' &&
+              d.status == 'sent' &&
+              d.contactName == contact.name);
+
+          if (!alreadySent) {
+            final tgSuccess = await TelegramNotificationService.sendEmergencyAlert(
+              chatId: contact.telegramChatId!,
+              contactName: contact.name,
+              lat: position.latitude,
+              lng: position.longitude,
+              reason: widget.triggerSource,
+            );
+
+            final existingIdx = deliveryList.indexWhere((d) =>
+                d.channel.toLowerCase() == 'telegram' && d.contactName == contact.name);
+
+            if (existingIdx != -1) {
+              if (tgSuccess) {
+                deliveryList[existingIdx] = NotificationDeliveryItemDto(
+                  contactName: contact.name,
+                  channel: 'Telegram',
+                  deliveryStatus: 'sent',
+                  detail: 'Delivered via Guardian Alert Bot',
+                );
+              }
+            } else {
+              deliveryList.add(NotificationDeliveryItemDto(
+                contactName: contact.name,
+                channel: 'Telegram',
+                deliveryStatus: tgSuccess ? 'sent' : 'failed',
+                detail: tgSuccess
+                    ? 'Delivered via Guardian Alert Bot'
+                    : 'Telegram delivery failed',
+              ));
+            }
+          }
+        }
+      }
+
       if (!mounted) return;
+
+      final anySent = deliveryList.any((d) => d.status == 'sent');
+      final allFailed = deliveryList.isNotEmpty && deliveryList.every((d) => d.status != 'sent');
 
       setState(() {
         _state = SosDialogState.active;
+        _deliveryDetails = deliveryList;
         _statusMessage = response.message.isNotEmpty
             ? response.message
             : 'Emergency SOS recorded on server.';
 
-        if (response.message.toLowerCase().contains('sent to')) {
+        if (anySent) {
           _channelStatus = 'DELIVERY CONFIRMED';
-        } else if (response.message.toLowerCase().contains('not configured')) {
-          _channelStatus = 'SMS NOT CONFIGURED';
+        } else if (allFailed) {
+          _channelStatus = 'DELIVERY FAILED / UNCONFIGURED';
+        } else if (response.message.toLowerCase().contains('sent to')) {
+          _channelStatus = 'DELIVERY CONFIRMED';
         } else {
-          _channelStatus = 'RECORDED';
+          _channelStatus = 'RECORDED ON SERVER';
         }
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _state = SosDialogState.error;
-        _statusMessage = 'Failed to dispatch SOS: $e';
-      });
+
+      // Resilient fallback: attempt direct Telegram dispatch if coordinates are available
+      final fallbackDetails = <NotificationDeliveryItemDto>[];
+      var anyFallbackSent = false;
+      if (_lat != null && _lng != null) {
+        final contactsAsync = ref.read(trustedContactsProvider);
+        final contacts = contactsAsync.valueOrNull ?? [];
+        for (final contact in contacts) {
+          if (contact.emergencyNotifyEnabled &&
+              contact.telegramChatId != null &&
+              contact.telegramChatId!.trim().isNotEmpty) {
+            final tgSuccess = await TelegramNotificationService.sendEmergencyAlert(
+              chatId: contact.telegramChatId!,
+              contactName: contact.name,
+              lat: _lat!,
+              lng: _lng!,
+              reason: widget.triggerSource,
+            );
+            fallbackDetails.add(NotificationDeliveryItemDto(
+              contactName: contact.name,
+              channel: 'Telegram',
+              deliveryStatus: tgSuccess ? 'sent' : 'failed',
+              detail: tgSuccess ? 'Delivered via Direct Bot' : 'Delivery failed',
+            ));
+            if (tgSuccess) anyFallbackSent = true;
+          }
+        }
+      }
+
+      if (anyFallbackSent) {
+        setState(() {
+          _state = SosDialogState.active;
+          _deliveryDetails = fallbackDetails;
+          _statusMessage = 'Emergency SOS alert dispatched to Telegram contacts.';
+          _channelStatus = 'DELIVERY CONFIRMED';
+        });
+      } else {
+        setState(() {
+          _state = SosDialogState.error;
+          _statusMessage = 'Failed to dispatch SOS: $e';
+        });
+      }
     }
   }
 
@@ -211,34 +309,77 @@ class _EmergencySosSheetState extends ConsumerState<_EmergencySosSheet> {
                 style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
               ),
               const SizedBox(height: AppSpacing.xl),
-              Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.error.withValues(alpha: 0.15),
-                  border: Border.all(color: AppColors.error, width: 3),
-                ),
-                child: Center(
-                  child: Text(
-                    '$_secondsRemaining',
-                    style: AppTextStyles.displayLg.copyWith(
-                      color: AppColors.error,
-                      fontWeight: FontWeight.w900,
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  SizedBox(
+                    width: 110,
+                    height: 110,
+                    child: CircularProgressIndicator(
+                      value: _secondsRemaining / _totalSeconds,
+                      strokeWidth: 6,
+                      backgroundColor: AppColors.error.withValues(alpha: 0.15),
+                      valueColor: const AlwaysStoppedAnimation<Color>(AppColors.error),
                     ),
                   ),
-                ),
-              ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(
-                    begin: const Offset(0.95, 0.95),
-                    end: const Offset(1.05, 1.05),
-                    duration: 600.ms,
+                  Container(
+                    width: 90,
+                    height: 90,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.error.withValues(alpha: 0.15),
+                    ),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '$_secondsRemaining',
+                            style: AppTextStyles.displayLg.copyWith(
+                              color: AppColors.error,
+                              fontWeight: FontWeight.w900,
+                              height: 1.0,
+                            ),
+                          ),
+                          Text(
+                            'SEC',
+                            style: AppTextStyles.labelSm.copyWith(
+                              color: AppColors.error,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-              const SizedBox(height: AppSpacing.xxl),
+                ],
+              ).animate(onPlay: (c) => c.repeat(reverse: true)).scale(
+                    begin: const Offset(0.97, 0.97),
+                    end: const Offset(1.03, 1.03),
+                    duration: 800.ms,
+                  ),
+              const SizedBox(height: AppSpacing.xl),
               AppButton(
-                label: 'I AM SAFE / CANCEL',
+                label: 'I AM SAFE / CANCEL (30s Cooldown)',
                 icon: Icons.shield,
                 variant: AppButtonVariant.secondary,
                 onPressed: _cancelSos,
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              TextButton(
+                onPressed: () {
+                  _countdownTimer?.cancel();
+                  _dispatchSos();
+                },
+                child: Text(
+                  'Send SOS Immediately',
+                  style: AppTextStyles.bodySm.copyWith(
+                    color: AppColors.error,
+                    fontWeight: FontWeight.w600,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
               ),
             ] else if (_state == SosDialogState.sending) ...[
               const CircularProgressIndicator(color: AppColors.error),
@@ -289,19 +430,86 @@ class _EmergencySosSheetState extends ConsumerState<_EmergencySosSheet> {
                   ),
                 ),
               ),
+              if (_lat != null && _lng != null) ...[
+                const SizedBox(height: AppSpacing.sm),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceContainerLowest,
+                    borderRadius: AppRadius.borderSm,
+                    border: Border.all(color: AppColors.outlineVariant),
+                  ),
+                  child: Text(
+                    'GPS: ${_lat!.toStringAsFixed(5)}, ${_lng!.toStringAsFixed(5)}',
+                    style: AppTextStyles.labelSm.copyWith(
+                      color: AppColors.onSurface,
+                      fontFamily: 'monospace',
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: AppSpacing.md),
               Text(
                 _statusMessage,
                 textAlign: TextAlign.center,
                 style: AppTextStyles.bodyMd,
               ),
-              if (_lat != null && _lng != null) ...[
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  'GPS: ${_lat!.toStringAsFixed(5)}, ${_lng!.toStringAsFixed(5)}',
-                  style: AppTextStyles.labelSm.copyWith(
-                    color: AppColors.onSurfaceVariant,
-                    fontFamily: 'monospace',
+              if (_deliveryDetails.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.md),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceContainerLowest,
+                    borderRadius: AppRadius.borderMd,
+                    border: Border.all(color: AppColors.outlineVariant),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Notifications Delivery:',
+                        style: AppTextStyles.labelSm.copyWith(
+                          color: AppColors.onSurfaceVariant,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      ..._deliveryDetails.map((detail) {
+                        final isSent = detail.status == 'sent';
+                        final isUnconfigured = detail.status == 'unconfigured';
+                        final color = isSent
+                            ? AppColors.tertiary
+                            : (isUnconfigured ? AppColors.outline : AppColors.error);
+                        final icon = isSent
+                            ? Icons.check_circle_outline
+                            : (isUnconfigured ? Icons.info_outline : Icons.cancel_outlined);
+                        
+                        String label = '${detail.recipientName} — ${detail.channel.toUpperCase()} ${detail.status}';
+                        if (detail.error != null && detail.error!.isNotEmpty) {
+                          label += ' (${detail.error})';
+                        }
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 3),
+                          child: Row(
+                            children: [
+                              Icon(icon, size: 14, color: color),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  label,
+                                  style: AppTextStyles.labelSm.copyWith(
+                                    color: color,
+                                    fontWeight: isSent ? FontWeight.w600 : FontWeight.w400,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                    ],
                   ),
                 ),
               ],

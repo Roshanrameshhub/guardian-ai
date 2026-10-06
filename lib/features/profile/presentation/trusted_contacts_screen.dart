@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -13,6 +14,7 @@ import '../../../core/widgets/common_widgets.dart';
 import '../../../core/widgets/dialogs.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../../../domain/entities/entities.dart';
+import '../../../core/services/telegram_notification_service.dart';
 import 'contacts_controller.dart';
 
 class TrustedContactsScreen extends ConsumerWidget {
@@ -278,21 +280,49 @@ class _ContactCard extends ConsumerWidget {
                 const SizedBox(height: 4),
                 Text(contact.phone, style: AppTextStyles.labelSm.copyWith(color: AppColors.onSurfaceVariant)),
                 const SizedBox(height: 6),
-                Row(
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: AppSpacing.sm,
+                  runSpacing: 4,
                   children: [
                     if (contact.emergencyNotifyEnabled)
                       const _Badge(label: 'SOS Alerts', color: AppColors.error, icon: Icons.notifications_active)
                     else
                       const _Badge(label: 'No SOS', color: AppColors.outline, icon: Icons.notifications_off),
-                    const SizedBox(width: AppSpacing.sm),
                     if (contact.locationShareEnabled)
                       const _Badge(label: 'Live Track', color: AppColors.tertiary, icon: Icons.location_on),
-                    if (contact.locationShareEnabled)
-                      const SizedBox(width: AppSpacing.sm),
                     if (contact.isTelegramLinked)
-                      const _Badge(label: 'Telegram', color: Colors.blue, icon: Icons.telegram),
+                      const _Badge(label: '🟢 Telegram Connected', color: AppColors.tertiary, icon: Icons.telegram)
+                    else
+                      const _Badge(label: '⚪ Telegram Not Connected', color: AppColors.outline, icon: Icons.telegram),
                   ],
                 ),
+                if (contact.isTelegramLinked) ...[
+                  const SizedBox(height: 6),
+                  InkWell(
+                    onTap: () => _sendTestTelegram(context, ref, contact),
+                    borderRadius: AppRadius.borderSm,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.send_rounded, size: 12, color: AppColors.primaryPulse),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Send Test Telegram',
+                            style: AppTextStyles.labelSm.copyWith(
+                              color: AppColors.primaryPulse,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -307,8 +337,21 @@ class _ContactCard extends ConsumerWidget {
                   ref: ref,
                   existingContact: contact,
                 );
-              } else if (value == 'telegram') {
+              } else if (value == 'telegram_link') {
                 _showTelegramLinkDialog(context, ref, contact);
+              } else if (value == 'telegram_test') {
+                _sendTestTelegram(context, ref, contact);
+              } else if (value == 'telegram_disconnect') {
+                final updated = contact.copyWith(telegramChatId: '');
+                await ref.read(contactsControllerProvider.notifier).updateContact(updated);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Telegram disconnected from contact.'),
+                      backgroundColor: AppColors.surfaceContainerHigh,
+                    ),
+                  );
+                }
               } else if (value == 'delete') {
                 final confirmed = await showConfirmDialog(
                   context: context,
@@ -328,18 +371,39 @@ class _ContactCard extends ConsumerWidget {
                   children: [
                     Icon(Icons.edit, color: AppColors.onSurface, size: 18),
                     SizedBox(width: AppSpacing.sm),
-                    Text('Edit'),
+                    Text('Edit Contact'),
                   ],
                 ),
               ),
-              if (!contact.isTelegramLinked)
+              PopupMenuItem(
+                value: 'telegram_link',
+                child: Row(
+                  children: [
+                    const Icon(Icons.telegram, color: Colors.blue, size: 18),
+                    const SizedBox(width: AppSpacing.sm),
+                    Text(contact.isTelegramLinked ? 'Re-link Telegram' : 'Connect Telegram'),
+                  ],
+                ),
+              ),
+              if (contact.isTelegramLinked)
                 const PopupMenuItem(
-                  value: 'telegram',
+                  value: 'telegram_test',
                   child: Row(
                     children: [
-                      Icon(Icons.telegram, color: Colors.blue, size: 18),
+                      Icon(Icons.mark_email_read_outlined, color: AppColors.tertiary, size: 18),
                       SizedBox(width: AppSpacing.sm),
-                      Text('Link Telegram'),
+                      Text('Send Test Telegram'),
+                    ],
+                  ),
+                ),
+              if (contact.isTelegramLinked)
+                const PopupMenuItem(
+                  value: 'telegram_disconnect',
+                  child: Row(
+                    children: [
+                      Icon(Icons.link_off, color: AppColors.outline, size: 18),
+                      SizedBox(width: AppSpacing.sm),
+                      Text('Disconnect Telegram'),
                     ],
                   ),
                 ),
@@ -360,6 +424,73 @@ class _ContactCard extends ConsumerWidget {
     );
   }
 
+  Future<void> _sendTestTelegram(BuildContext context, WidgetRef ref, TrustedContactEntity contact) async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
+            const SizedBox(width: 12),
+            Text('Sending test Telegram notification to ${contact.name}...'),
+          ],
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+
+    try {
+      var sentSuccess = false;
+      var statusMsg = '';
+
+      try {
+        final res = await ref.read(contactsControllerProvider.notifier).sendTestTelegram(contact.id);
+        sentSuccess = res.success;
+        statusMsg = res.message;
+      } catch (err) {
+        statusMsg = err.toString();
+      }
+
+      // If backend was not able to dispatch, but contact has telegramChatId, try direct client dispatch
+      if (!sentSuccess && contact.telegramChatId != null && contact.telegramChatId!.trim().isNotEmpty) {
+        final directOk = await TelegramNotificationService.sendTestPing(
+          chatId: contact.telegramChatId!,
+          contactName: contact.name,
+        );
+        if (directOk) {
+          sentSuccess = true;
+          statusMsg = 'Delivered directly to @GuardAIAlertBot';
+        }
+      }
+
+      if (context.mounted) {
+        if (sentSuccess) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✓ Guardian AI test notification delivered to ${contact.name} via Telegram!'),
+              backgroundColor: AppColors.tertiary,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✗ Telegram notification failed: $statusMsg'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Telegram Test Error: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _showTelegramLinkDialog(BuildContext context, WidgetRef ref, TrustedContactEntity contact) async {
     try {
       showDialog(
@@ -367,43 +498,89 @@ class _ContactCard extends ConsumerWidget {
         barrierDismissible: false,
         builder: (c) => const Center(child: CircularProgressIndicator()),
       );
-      
+
       final response = await ref.read(contactsControllerProvider.notifier).generateTelegramLink(contact.id);
-      
+
       if (context.mounted) {
         Navigator.pop(context); // Close loading
         showAppBottomSheet(
           context: context,
-          title: 'Link Telegram',
+          title: 'Connect Telegram for ${contact.name}',
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Ask ${contact.name} to send the following message to our Telegram bot to receive emergency alerts.',
-                style: AppTextStyles.bodyMd,
+                'Follow these simple steps so ${contact.name} receives immediate Telegram alerts during an SOS:',
+                style: AppTextStyles.bodyMd.copyWith(color: AppColors.onSurfaceVariant),
               ),
-              const SizedBox(height: AppSpacing.lg),
-              Text('Bot Username:', style: AppTextStyles.labelSm),
-              Text('@${response.botUsername}', style: AppTextStyles.headlineMd.copyWith(color: AppColors.primaryPulse)),
               const SizedBox(height: AppSpacing.md),
-              Text('Send this exact message:', style: AppTextStyles.labelSm),
               Container(
-                width: double.infinity,
                 padding: const EdgeInsets.all(AppSpacing.md),
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: AppColors.surfaceContainerHigh,
                   borderRadius: AppRadius.borderMd,
+                  border: Border.all(color: AppColors.outlineVariant),
                 ),
-                child: SelectableText(
-                  '/start ${response.linkToken}',
-                  style: const TextStyle(fontSize: 18, fontFamily: 'monospace', fontWeight: FontWeight.bold),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.telegram, color: Colors.blue, size: 20),
+                        const SizedBox(width: 8),
+                        Text('1. Open Bot in Telegram:', style: AppTextStyles.labelSm.copyWith(fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text('@${response.botUsername}', style: AppTextStyles.headlineMd.copyWith(color: AppColors.primaryPulse, fontSize: 18)),
+                    const SizedBox(height: 12),
+                    Text('2. Press "Start" or send this command:', style: AppTextStyles.labelSm.copyWith(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 6),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceContainerLowest,
+                        borderRadius: AppRadius.borderSm,
+                        border: Border.all(color: AppColors.primaryPulse.withValues(alpha: 0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: SelectableText(
+                              '/start ${response.linkToken}',
+                              style: const TextStyle(fontSize: 15, fontFamily: 'monospace', fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.copy, size: 18, color: AppColors.primaryPulse),
+                            tooltip: 'Copy Command',
+                            onPressed: () {
+                              Clipboard.setData(ClipboardData(text: '/start ${response.linkToken}'));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Command copied to clipboard! Paste it into @${response.botUsername} in Telegram.'),
+                                  duration: const Duration(seconds: 3),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: AppSpacing.md),
               Text(
-                'This link will expire in ${response.expiresInMinutes} minutes.',
-                style: AppTextStyles.labelSm.copyWith(color: AppColors.error),
+                'Link expires in ${response.expiresInMinutes} minutes. Once sent, Guardian AI automatically links this contact.',
+                style: AppTextStyles.labelSm.copyWith(color: AppColors.onSurfaceVariant),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              AppButton(
+                label: 'Done',
+                onPressed: () => Navigator.pop(context),
               ),
             ],
           ),
@@ -466,6 +643,7 @@ class _ContactFormState extends ConsumerState<_ContactForm> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameCtrl;
   late final TextEditingController _phoneCtrl;
+  late final TextEditingController _telegramChatIdCtrl;
   late String _relationship;
   late bool _emergencyNotify;
   late bool _locationShare;
@@ -480,6 +658,7 @@ class _ContactFormState extends ConsumerState<_ContactForm> {
     final c = widget.existingContact;
     _nameCtrl = TextEditingController(text: c?.name ?? widget.initialName ?? '');
     _phoneCtrl = TextEditingController(text: c?.phone ?? widget.initialPhone ?? '');
+    _telegramChatIdCtrl = TextEditingController(text: c?.telegramChatId ?? '');
     _relationship = c?.relationshipLabel ?? 'Friend';
     if (!_relationships.contains(_relationship)) {
       _relationship = 'Other';
@@ -493,6 +672,7 @@ class _ContactFormState extends ConsumerState<_ContactForm> {
   void dispose() {
     _nameCtrl.dispose();
     _phoneCtrl.dispose();
+    _telegramChatIdCtrl.dispose();
     super.dispose();
   }
 
@@ -502,6 +682,9 @@ class _ContactFormState extends ConsumerState<_ContactForm> {
 
     try {
       final notifier = ref.read(contactsControllerProvider.notifier);
+      final rawChatId = _telegramChatIdCtrl.text.trim();
+      final telegramChatId = rawChatId.isEmpty ? null : rawChatId;
+
       if (widget.existingContact != null) {
         final updated = widget.existingContact!.copyWith(
           name: _nameCtrl.text.trim(),
@@ -510,6 +693,7 @@ class _ContactFormState extends ConsumerState<_ContactForm> {
           emergencyNotifyEnabled: _emergencyNotify,
           locationShareEnabled: _locationShare,
           priority: _priority,
+          telegramChatId: telegramChatId ?? '',
         );
         await notifier.updateContact(updated);
       } else {
@@ -523,6 +707,7 @@ class _ContactFormState extends ConsumerState<_ContactForm> {
           emergencyNotifyEnabled: _emergencyNotify,
           locationShareEnabled: _locationShare,
           priority: _priority,
+          telegramChatId: telegramChatId,
         );
         await notifier.addContact(newContact);
       }
@@ -548,6 +733,8 @@ class _ContactFormState extends ConsumerState<_ContactForm> {
 
   @override
   Widget build(BuildContext context) {
+    final hasTelegram = _telegramChatIdCtrl.text.trim().isNotEmpty;
+
     return Form(
       key: _formKey,
       child: SingleChildScrollView(
@@ -594,10 +781,59 @@ class _ContactFormState extends ConsumerState<_ContactForm> {
               }).toList(),
             ),
             const SizedBox(height: AppSpacing.lg),
+            // Telegram Alerts Section
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceContainerLowest,
+                borderRadius: AppRadius.borderMd,
+                border: Border.all(
+                  color: hasTelegram ? AppColors.tertiary.withValues(alpha: 0.5) : AppColors.outlineVariant,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.telegram, color: hasTelegram ? Colors.blue : AppColors.outline, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Telegram Emergency Alerts',
+                        style: AppTextStyles.bodyMd.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                      const Spacer(),
+                      Text(
+                        hasTelegram ? '🟢 Connected' : '⚪ Not Connected',
+                        style: AppTextStyles.labelSm.copyWith(
+                          color: hasTelegram ? AppColors.tertiary : AppColors.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    'Receive real-time SOS alerts and live GPS maps via our Telegram bot (@GuardAIAlertBot).',
+                    style: AppTextStyles.labelSm.copyWith(color: AppColors.onSurfaceVariant),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  AppTextField(
+                    label: 'Telegram Chat ID (Optional)',
+                    controller: _telegramChatIdCtrl,
+                    hint: 'e.g. 123456789',
+                    keyboardType: TextInputType.number,
+                    prefixIcon: Icons.badge_outlined,
+                    onChanged: (_) => setState(() {}),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: Text('Notify on Emergency SOS', style: AppTextStyles.bodyMd.copyWith(fontWeight: FontWeight.w600)),
-              subtitle: Text('Send automatic SMS alert with your live GPS location', style: AppTextStyles.labelSm),
+              subtitle: Text('Send automatic Telegram / SMS alert with your live GPS location', style: AppTextStyles.labelSm),
               activeTrackColor: AppColors.primaryPulse,
               value: _emergencyNotify,
               onChanged: (v) => setState(() => _emergencyNotify = v),
@@ -616,7 +852,6 @@ class _ContactFormState extends ConsumerState<_ContactForm> {
               isLoading: _submitting,
               onPressed: _submit,
             ),
-
           ],
         ),
       ),

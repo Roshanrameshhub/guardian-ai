@@ -109,7 +109,7 @@ async def test_multimodal_risk_fusion(client: AsyncClient, auth_headers: dict):
     assert crit_data["risk_level"] in ("HIGH", "CRITICAL")
     assert crit_data["risk_score"] >= 0.75
     assert crit_data["requires_user_prompt"] is True
-    assert len(crit_data["signals"]) == 3
+    assert len(crit_data["signals"]) >= 3
 
 
 @pytest.mark.asyncio

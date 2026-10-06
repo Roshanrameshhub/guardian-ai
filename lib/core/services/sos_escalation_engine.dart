@@ -51,7 +51,7 @@ class SosEscalationEngine {
 
   SosEngineState _state = SosEngineState.idle;
   DateTime? _lastSosDispatchedTime;
-  static const Duration cooldownDuration = Duration(seconds: 20);
+  static const Duration cooldownDuration = Duration(minutes: 5);
 
   SosEngineState get state => _state;
   bool get isCooldownActive {

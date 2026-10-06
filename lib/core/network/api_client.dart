@@ -69,7 +69,7 @@ class ApiClient {
   }
 
   Uri _uri(String path, [Map<String, String>? query]) {
-    final root = baseUrl.isEmpty ? 'http://localhost:8000/api/v1' : baseUrl;
+    final root = baseUrl.isEmpty ? ApiConfig.defaultProductionUrl : baseUrl;
     final normalizedPath = path.startsWith('/') ? path : '/$path';
     try {
       return Uri.parse('$root$normalizedPath').replace(queryParameters: query);

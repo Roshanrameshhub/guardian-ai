@@ -53,6 +53,7 @@ async def list_contacts(
             emergency_notify_enabled=c.emergency_notify_enabled,
             location_share_enabled=c.location_share_enabled,
             is_telegram_linked=bool(c.telegram_chat_id),
+            telegram_chat_id=c.telegram_chat_id,
         )
         for c in contacts
     ]
@@ -74,6 +75,7 @@ async def create_contact(
         emergency_notify_enabled=contact.emergency_notify_enabled,
         location_share_enabled=contact.location_share_enabled,
         is_telegram_linked=bool(contact.telegram_chat_id),
+        telegram_chat_id=contact.telegram_chat_id,
     )
 
 
@@ -93,6 +95,7 @@ async def get_contact(
         emergency_notify_enabled=contact.emergency_notify_enabled,
         location_share_enabled=contact.location_share_enabled,
         is_telegram_linked=bool(contact.telegram_chat_id),
+        telegram_chat_id=contact.telegram_chat_id,
     )
 
 
@@ -115,6 +118,7 @@ async def update_contact(
         emergency_notify_enabled=contact.emergency_notify_enabled,
         location_share_enabled=contact.location_share_enabled,
         is_telegram_linked=bool(contact.telegram_chat_id),
+        telegram_chat_id=contact.telegram_chat_id,
     )
 
 
@@ -133,3 +137,36 @@ async def generate_telegram_link(
 ) -> TelegramLinkResponse:
     """Generate a link token for Telegram integration."""
     return await ContactService(db).generate_telegram_link(user_id, contact_id)
+
+
+@contacts_router.post("/{contact_id}/test-telegram", response_model=ApiMessageResponse)
+async def send_test_telegram(
+    contact_id: str, user_id: CurrentUserId, db: DbSession
+) -> ApiMessageResponse:
+    """Send a test notification to verified Telegram chat."""
+    contact = await ContactService(db).get_contact(user_id, contact_id)
+    if not contact.telegram_chat_id:
+        return ApiMessageResponse(
+            success=False,
+            message="Telegram is not linked for this contact. Use 'Connect Telegram' first.",
+        )
+
+    from app.services.telegram_provider import TelegramProvider
+    provider = TelegramProvider()
+    test_msg = (
+        "Guardian AI test notification.\n"
+        "Telegram notifications are configured successfully."
+    )
+    success, reason = await provider.send_emergency_message(
+        chat_id=contact.telegram_chat_id,
+        message=test_msg,
+    )
+    if success:
+        return ApiMessageResponse(
+            success=True,
+            message=f"Test notification delivered to Telegram (chat {contact.telegram_chat_id}).",
+        )
+    return ApiMessageResponse(
+        success=False,
+        message=f"Telegram delivery failed: {reason}",
+    )

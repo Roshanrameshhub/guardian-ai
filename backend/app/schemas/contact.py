@@ -14,6 +14,7 @@ class TrustedContactResponse(BaseModel):
     emergency_notify_enabled: bool = True
     location_share_enabled: bool = False
     is_telegram_linked: bool = False
+    telegram_chat_id: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -31,6 +32,7 @@ class TrustedContactCreate(BaseModel):
     priority: int = 1
     emergency_notify_enabled: bool = True
     location_share_enabled: bool = False
+    telegram_chat_id: str | None = None
 
 
 class TrustedContactUpdate(BaseModel):
@@ -41,3 +43,4 @@ class TrustedContactUpdate(BaseModel):
     priority: int | None = None
     emergency_notify_enabled: bool | None = None
     location_share_enabled: bool | None = None
+    telegram_chat_id: str | None = None
