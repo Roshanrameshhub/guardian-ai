@@ -289,12 +289,21 @@ class EmergencyService:
             elif notif.channel == "telegram":
                 contacts_with_telegram.add(notif.contact_id)
                 if settings.has_telegram:
-                    success, reason = await telegram_provider.send_emergency_message(
-                        chat_id=notif.recipient,
-                        message=req.message or 'Needs help immediately.',
-                        lat=req.lat,
-                        lng=req.lng
-                    )
+                    if req.lat is not None and req.lng is not None:
+                        success, reason = await telegram_provider.send_emergency_alert(
+                            chat_id=notif.recipient,
+                            contact_name=contact_name,
+                            lat=req.lat,
+                            lng=req.lng,
+                            reason=req.trigger_source or req.message,
+                        )
+                    else:
+                        success, reason = await telegram_provider.send_emergency_message(
+                            chat_id=notif.recipient,
+                            message=req.message or 'Needs help immediately.',
+                            lat=req.lat,
+                            lng=req.lng
+                        )
                     if not success:
                         notif.failure_reason = reason
                 else:

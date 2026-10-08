@@ -1,16 +1,30 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
+
+import '../constants/api_constants.dart';
+import '../network/api_client.dart';
 import '../utils/dev_log.dart';
 
-/// Direct Telegram Notification Service for Guardian AI.
+/// Telegram Notification Service for Guardian AI.
 ///
-/// Dispatches real-time emergency SOS alerts and test pings directly to
-/// the Guardian AI Alert Bot (@GuardAIAlertBot) on Telegram.
+/// Dispatches real-time emergency SOS alerts and test pings to trusted contacts via
+/// the Guardian AI backend proxy (FastAPI backend -> Telegram Bot API).
+///
+/// NOTE: The Telegram Bot Token is never stored on the mobile device or client application.
+/// It is securely managed and loaded exclusively by the backend environment (TELEGRAM_BOT_TOKEN).
 abstract final class TelegramNotificationService {
-  static const String botToken = '8820326376:AAFj5gQak0weWbzQjp18XGN2ncmSnBuTh8Q';
   static const String botUsername = 'GuardAIAlertBot';
 
-  /// Dispatches live SOS emergency alert with Google Maps coordinates to a Telegram chat.
+  static ApiClient? _customApiClient;
+
+  @visibleForTesting
+  static void setApiClient(ApiClient? client) {
+    _customApiClient = client;
+  }
+
+  static ApiClient get _client => _customApiClient ?? ApiClient();
+
+  /// Dispatches live SOS emergency alert with Google Maps coordinates to a Telegram chat
+  /// through the backend proxy endpoint.
   static Future<bool> sendEmergencyAlert({
     required String chatId,
     required String contactName,
@@ -23,44 +37,34 @@ abstract final class TelegramNotificationService {
     if (cleanChatId.isEmpty) return false;
 
     try {
-      final url = Uri.parse('https://api.telegram.org/bot$botToken/sendMessage');
-      final mapsLink = 'https://maps.google.com/?q=$lat,$lng';
-      final nowStr = DateTime.now().toLocal().toString().split('.').first;
-
-      final text = '🚨 *GUARDIAN AI EMERGENCY SOS* 🚨\n\n'
-          '⚠️ *Alert for Trusted Contact:* $contactName\n'
-          '⚡ *Trigger Source:* ${reason ?? "Emergency SOS Triggered"}\n'
-          '🔋 *Battery Level:* ${batteryLevel != null ? "$batteryLevel%" : "Unknown"}\n'
-          '🕒 *Time:* $nowStr\n\n'
-          '📍 *Live GPS Location:*\n$mapsLink\n\n'
-          '👉 Please contact the user immediately or alert local authorities if needed.';
-
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
+      final response = await _client.post(
+        ApiConstants.telegramAlert,
+        body: {
           'chat_id': cleanChatId,
-          'text': text,
-          'parse_mode': 'Markdown',
-          'disable_web_page_preview': false,
-        }),
-      ).timeout(const Duration(seconds: 10));
+          'contact_name': contactName,
+          'lat': lat,
+          'lng': lng,
+          if (reason != null) 'reason': reason,
+          if (batteryLevel != null) 'battery_level': batteryLevel,
+        },
+      );
 
-      final success = response.statusCode == 200;
+      final success = response['success'] == true;
       DevLog.log(
         'TELEGRAM',
         success
-            ? 'Emergency alert successfully sent to Telegram chat $cleanChatId for $contactName'
-            : 'Telegram alert failed (HTTP ${response.statusCode}): ${response.body}',
+            ? 'Emergency alert successfully dispatched via backend to Telegram chat $cleanChatId for $contactName'
+            : 'Telegram alert failed: ${response['message']}',
       );
       return success;
     } catch (e) {
-      DevLog.log('TELEGRAM', 'Exception sending Telegram alert: $e');
+      DevLog.log('TELEGRAM', 'Exception sending Telegram alert via backend: $e');
       return false;
     }
   }
 
-  /// Sends a verification test ping to confirm Telegram bot connectivity.
+  /// Sends a verification test ping to confirm Telegram bot connectivity
+  /// through the backend proxy endpoint.
   static Future<bool> sendTestPing({
     required String chatId,
     required String contactName,
@@ -69,26 +73,19 @@ abstract final class TelegramNotificationService {
     if (cleanChatId.isEmpty) return false;
 
     try {
-      final url = Uri.parse('https://api.telegram.org/bot$botToken/sendMessage');
-      final text = '🛡️ *Guardian AI — Telegram Connection Verified*\n\n'
-          'Hello $contactName! This Telegram chat is linked to Guardian AI.\n'
-          'You will automatically receive instant SOS alerts with live GPS location whenever an emergency is detected.';
-
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
+      final response = await _client.post(
+        ApiConstants.telegramTest,
+        body: {
           'chat_id': cleanChatId,
-          'text': text,
-          'parse_mode': 'Markdown',
-        }),
-      ).timeout(const Duration(seconds: 10));
+          'contact_name': contactName,
+        },
+      );
 
-      final success = response.statusCode == 200;
-      DevLog.log('TELEGRAM', 'Test ping to $cleanChatId result: $success');
+      final success = response['success'] == true;
+      DevLog.log('TELEGRAM', 'Test ping via backend to $cleanChatId result: $success');
       return success;
     } catch (e) {
-      DevLog.log('TELEGRAM', 'Exception sending test ping: $e');
+      DevLog.log('TELEGRAM', 'Exception sending test ping via backend: $e');
       return false;
     }
   }

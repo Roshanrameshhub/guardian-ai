@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy import select, update
 
-from app.core.dependencies import CurrentUserId, DbSession
+from app.core.dependencies import CurrentUserId, DbSession, get_optional_user_id
 from app.models.notification import Notification, DeviceToken
 from app.schemas.activity import NotificationResponse
 from app.schemas.common import ApiMessageResponse
@@ -133,3 +133,67 @@ async def delete_notification(
     await db.delete(notif)
     await db.commit()
     return ApiMessageResponse(success=True, message="Notification deleted.")
+
+
+# ─── Telegram Notification Endpoints ──────────────────────────────────────────
+
+class TelegramAlertRequest(BaseModel):
+    chat_id: str
+    contact_name: str = "Trusted Contact"
+    lat: float
+    lng: float
+    reason: str | None = None
+    battery_level: int | None = None
+
+
+class TelegramTestPingRequest(BaseModel):
+    chat_id: str
+    contact_name: str = "Trusted Contact"
+
+
+@router.post("/notifications/telegram/alert", response_model=ApiMessageResponse)
+async def dispatch_telegram_alert(
+    req: TelegramAlertRequest,
+    user_id: str | None = Depends(get_optional_user_id),
+) -> ApiMessageResponse:
+    """
+    Proxy an emergency SOS alert to Telegram Bot API.
+    The Telegram bot token is managed exclusively on the backend via TELEGRAM_BOT_TOKEN.
+    """
+    from app.services.telegram_provider import TelegramProvider
+
+    provider = TelegramProvider()
+    success, reason = await provider.send_emergency_alert(
+        chat_id=req.chat_id,
+        contact_name=req.contact_name,
+        lat=req.lat,
+        lng=req.lng,
+        reason=req.reason,
+        battery_level=req.battery_level,
+    )
+    return ApiMessageResponse(
+        success=success,
+        message=f"Delivered via Guardian Alert Bot: {reason}" if success else reason,
+    )
+
+
+@router.post("/notifications/telegram/test", response_model=ApiMessageResponse)
+async def dispatch_telegram_test(
+    req: TelegramTestPingRequest,
+    user_id: str | None = Depends(get_optional_user_id),
+) -> ApiMessageResponse:
+    """
+    Proxy a test ping to Telegram Bot API.
+    The Telegram bot token is managed exclusively on the backend via TELEGRAM_BOT_TOKEN.
+    """
+    from app.services.telegram_provider import TelegramProvider
+
+    provider = TelegramProvider()
+    success, reason = await provider.send_test_ping(
+        chat_id=req.chat_id,
+        contact_name=req.contact_name,
+    )
+    return ApiMessageResponse(
+        success=success,
+        message="Delivered directly to @GuardAIAlertBot" if success else reason,
+    )

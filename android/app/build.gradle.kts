@@ -55,7 +55,7 @@ android {
             ?: System.getenv("MAPS_API_KEY")
             ?: System.getenv("GOOGLE_MAPS_API_KEY")
             ?: (project.findProperty("MAPS_API_KEY") as? String)
-            ?: "AIzaSyCzUwwmRGY5hbdKUE0Wmxc-cuVkcrFljV8"
+            ?: ""
         manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
     }
 

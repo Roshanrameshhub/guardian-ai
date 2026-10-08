@@ -63,6 +63,8 @@ abstract final class ApiConstants {
   static const String statistics = '/statistics';
   static const String achievements = '/achievements';
   static const String safetyEvents = '/safety/events';
+  static const String telegramAlert = '/notifications/telegram/alert';
+  static const String telegramTest = '/notifications/telegram/test';
 
   // Fake tools
   static const String fakeCall = '/tools/fake-call';

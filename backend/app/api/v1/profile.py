@@ -153,13 +153,9 @@ async def send_test_telegram(
 
     from app.services.telegram_provider import TelegramProvider
     provider = TelegramProvider()
-    test_msg = (
-        "Guardian AI test notification.\n"
-        "Telegram notifications are configured successfully."
-    )
-    success, reason = await provider.send_emergency_message(
+    success, reason = await provider.send_test_ping(
         chat_id=contact.telegram_chat_id,
-        message=test_msg,
+        contact_name=contact.name,
     )
     if success:
         return ApiMessageResponse(
